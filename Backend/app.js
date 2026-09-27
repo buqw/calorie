@@ -11,7 +11,11 @@ app.use(cookieParser())
 //Auth Routes
 const authRoutes = require('./routes/AuthRoutes')
 app.use('/api/auth', authRoutes)
+//Profile Routes
+const profileRoutes = require('./routes/profileRoutes')
+app.use('/api/profile',profileRoutes);
 
+// MongoDB Connection
 mongoose.connect(process.env.Mongo_URI)
     .then(()=>{
         console.log("connected.")
