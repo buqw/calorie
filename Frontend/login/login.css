@@ -1,0 +1,50 @@
+/* Reuse the same logo, fields, leaf artwork and colors as the setup pages. */
+@import url("signup.css");
+
+/* ===== 1. Desktop Login layout ===== */
+.login-page { max-width: 1100px; }
+.login-content { width: min(100%, 740px); min-height: 740px; padding: 62px 32px 40px; }
+.login-content .brand { margin-bottom: 36px; gap: 16px; }
+.login-content .brand-mark { width: 126px; height: 96px; }
+.login-content .brand-name { font-size: 70px; letter-spacing: -3px; }
+.login-content h1 { font-size: 40px; margin-bottom: 12px; }
+.login-content .subtitle { font-size: 21px; margin-bottom: 34px; }
+.login-content .preview-note { font-size: 12px; line-height: 1.5; }
+.login-content .form-field { text-align: left; margin-bottom: 24px; }
+.login-content .form-field > label { font-size: 17px; }
+.login-content .form-field input { min-height: 58px; padding: 16px; }
+.login-content .password-wrapper input { padding-right: 57px; }
+.login-content .eye-button { width: 50px; height: 50px; top: 4px; }
+.forgot-row { text-align: right; margin: -12px 0 26px; }
+.forgot-row .text-link { font-size: 15px; min-height: 44px; display: inline-flex; align-items: center; }
+.login-button { width: 100%; min-height: 59px; margin-top: 9px; font-size: 23px; }
+.login-content .login-line { margin-top: 22px; font-size: 16px; line-height: 1.5; }
+.welcome-link { display: inline-flex; align-items: center; min-height: 44px; margin-top: 25px; color: #729184; font-size: 15px; font-weight: 700; }
+.status-banner { margin: 16px 0; padding: 13px 15px; color: var(--green-dark); background: var(--selected); border: 1px solid var(--border); border-radius: 8px; text-align: left; font-size: 14px; line-height: 1.5; }
+
+/* ===== 2. Tablet ===== */
+@media (max-width: 900px) {
+  .login-content { min-height: 0; padding: 48px 34px 35px; }
+  .login-content .brand-mark { width: 108px; height: 80px; }
+  .login-content .brand-name { font-size: 60px; }
+  .login-content h1 { font-size: 35px; }
+  .login-content .subtitle { font-size: 18px; }
+}
+
+/* ===== 3. Phone ===== */
+@media (max-width: 560px) {
+  .login-content { padding: 35px 20px 25px; }
+  .login-content .brand { gap: 9px; margin-bottom: 28px; }
+  .login-content .brand-mark { width: 74px; height: 58px; }
+  .login-content .brand-name { font-size: 43px; letter-spacing: -2px; }
+  .login-content h1 { font-size: 30px; }
+  .login-content .subtitle { font-size: 16px; margin-bottom: 27px; }
+  .login-content .form-field > label { font-size: 15px; }
+  .login-content .form-field input { min-height: 52px; padding: 14px; font-size: 16px; }
+  .login-content .password-wrapper input { padding-right: 54px; }
+  .login-content .eye-button { width: 46px; height: 46px; top: 3px; }
+  .login-button { min-height: 52px; font-size: 20px; }
+  .login-content .login-line { font-size: 14px; }
+  .forgot-row .text-link { font-size: 14px; }
+  .welcome-link { margin-top: 22px; }
+}
