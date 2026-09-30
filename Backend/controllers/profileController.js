@@ -12,7 +12,8 @@ const getProfile = async (req,res)=>{
                 goal: user.goal,
                 activityLevel: user.activityLevel,
                 dietaryPreference: user.dietaryPreference,
-                dislikedFoods: user.dislikedFoods
+                dislikedFoods: user.dislikedFoods,
+                healthNotes: user.healthNotes
             }            
         })        
     }catch(e){
@@ -61,7 +62,8 @@ const updateProfile = async (req,res)=>{
                 goal: user.goal,
                 activityLevel: user.activityLevel,
                 dietaryPreference: user.dietaryPreference,
-                dislikedFoods: user.dislikedFoods                
+                dislikedFoods: user.dislikedFoods,
+                healthNotes: user.healthNotes                                
             }
         })
     }catch(e){
