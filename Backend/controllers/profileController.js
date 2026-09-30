@@ -11,7 +11,7 @@ const getProfile = async (req,res)=>{
                 weight: user.weight,
                 goal: user.goal,
                 activityLevel: user.activityLevel,
-                dietaryPreference: user.dietaryPreference,
+                dietType: user.dietType,
                 dislikedFoods: user.dislikedFoods,
                 healthNotes: user.healthNotes
             }            
@@ -35,8 +35,9 @@ const updateProfile = async (req,res)=>{
             weight,
             goal,
             activityLevel,
-            dietaryPreference,
-            dislikedFoods
+            dietType,
+            dislikedFoods,
+            healthNotes
         } = req.body;
 
         user.birthDate = birthDate;
@@ -45,9 +46,9 @@ const updateProfile = async (req,res)=>{
         user.weight = weight;
         user.goal = goal;
         user.activityLevel = activityLevel;
-        user.dietaryPreference = dietaryPreference;
-        user.dislikedFoods = dislikedFoods;
-
+        user.dietType = dietType;
+        user.dislikedFoods = dislikedFoods ?? [];
+        user.healthNotes = healthNotes ?? "";
         await user.save();
 
         res.status(200).json({
@@ -61,7 +62,7 @@ const updateProfile = async (req,res)=>{
                 weight: user.weight,
                 goal: user.goal,
                 activityLevel: user.activityLevel,
-                dietaryPreference: user.dietaryPreference,
+                dietType: user.dietType,
                 dislikedFoods: user.dislikedFoods,
                 healthNotes: user.healthNotes                                
             }
