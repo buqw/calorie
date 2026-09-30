@@ -95,7 +95,8 @@ const userSchema = new Schema({
     //User Preference
     dietType: {
       type: String,
-      enum: ["vegetarian", "meat_eater"],
+      enum: ["no_preference","vegetarian", "vegan"],
+      default:"no_preference",
       required: true
     },
 
@@ -124,8 +125,12 @@ const userSchema = new Schema({
     streak: {
       type: Number,
       default: 0
-    }
-})
+    },
+}, 
+  {
+    timestamps: true
+  }
+)
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;

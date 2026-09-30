@@ -96,12 +96,13 @@ const validateProfile = (req,res,next) =>{
     }
 
     //Validate diet type
-    if(!['vegetarian', 'meat_eater'].includes(dietType)){
+    if(!['vegetarian', 'no_preference','vegan'].includes(dietType)){
         return res.status(400).json({
-            message: 'Diet type must be vegetarian or meat_eater'
+            message: 'Diet type must be vegetarian, vegan or no_preference'
         })
     }
 
+    // Validate disliked food
     if (dislikedFoods !== undefined){ 
         if(
             !Array.isArray(dislikedFoods) ||
