@@ -13,9 +13,13 @@ app.use('/api/auth', authRoutes)
 //Profile Routes
 const profileRoutes = require('./routes/profileRoutes')
 app.use('/api/profile',profileRoutes);
-//Meals route
+//Meals routes
 const mealRoutes = require('./routes/mealRoutes')
 app.use('/api/meals', mealRoutes)
+//Dashboard routes
+const dashboardRoutes = require('./routes/dashboardRoutes');
+app.use('/api/dashboard', dashboardRoutes)
+
 
 // MongoDB Connection
 mongoose.connect(process.env.Mongo_URI)
