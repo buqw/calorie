@@ -1,9 +1,12 @@
+const User = require('../models/User')
+
 const getProfile = async (req,res)=>{
     try{
         const user = req.user;
         res.status(200).json({
             user: {
                 id: user._id,
+                username: user.username,
                 email: user.email,
                 birthDate: user.birthDate,
                 gender: user.gender,
@@ -29,6 +32,7 @@ const updateProfile = async (req,res)=>{
         const user = req.user
 
         const {
+            username,
             birthDate,
             gender,
             height,
@@ -39,7 +43,28 @@ const updateProfile = async (req,res)=>{
             dislikedFoods,
             healthNotes
         } = req.body;
+        
+        //Duplicated usernames validation
+        try{
+            const duplicatedUsername = await User.findOne({
+                username,
+                _id: {$ne: user._id}
+            })
 
+            if(duplicatedUsername){
+                return res.status(400).json({
+                    message: 'Username is used. Try another username'
+                })
+            }
+        }catch(err){
+            return res.status(500).json({
+                message: 'Server error',
+                error: err.message
+            })
+        }
+
+        //Save user's new info
+        user.username = username;
         user.birthDate = birthDate;
         user.gender = gender;
         user.height = height;
@@ -55,6 +80,7 @@ const updateProfile = async (req,res)=>{
             message: 'Profile updated successfully.',
             user: {
                 id: user._id,
+                username: user.username,
                 email: user.email,
                 birthDate: user.birthDate,
                 gender: user.gender,
