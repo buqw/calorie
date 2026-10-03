@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#168454">
-  <title>Your goal | Calorie</title>
+  <title>Your height | Calorie</title>
   <link rel="stylesheet" href="signup.css">
   <script src="signup.js" defer></script>
 </head>
-<body data-step="7">
+<body data-step="3">
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
 <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
 <symbol id="i-male" viewBox="0 0 48 48"><circle cx="24" cy="12" r="8"/><path d="M8 43c0-13 7-20 16-20s16 7 16 20Z"/></symbol>
@@ -60,16 +60,16 @@
           </svg>
           <span class="brand-name">Calorie</span>
         </div>
-        <p class="step-label">Step 7 of 8</p>
-        <progress class="step-progress" value="7" max="8" aria-label="Setup progress">7 of 8</progress>
-        <h1 id="step-title" tabindex="-1">Your goal</h1>
-        <p class="subtitle">Choose what you would like to work toward.</p>
+        <p class="step-label">Step 3 of 8</p>
+        <progress class="step-progress" value="3" max="8" aria-label="Setup progress">3 of 8</progress>
+        <h1 id="step-title" tabindex="-1">Your height</h1>
+        <p class="subtitle">Select your height.</p>
         <p class="preview-note" id="preview-note" hidden>Preview mode · No account will be created.</p>
         <form id="step-form" novalidate>
-          <fieldset class="choice-group "><legend class="sr-only">Select goal</legend><label class="choice-card"><input type="radio" name="goal" value="lose-fat" aria-describedby="goal-error"><svg class="choice-icon" aria-hidden="true"><use href="#i-flame"/></svg><span class="choice-text"><strong>Lose Fat</strong><span>Work toward reducing body fat.</span></span><span class="choice-check" aria-hidden="true">✓</span></label><label class="choice-card"><input type="radio" name="goal" value="build-muscle" aria-describedby="goal-error"><svg class="choice-icon" aria-hidden="true"><use href="#i-muscle"/></svg><span class="choice-text"><strong>Build Muscle</strong><span>Support muscle growth.</span></span><span class="choice-check" aria-hidden="true">✓</span></label><label class="choice-card"><input type="radio" name="goal" value="maintain" aria-describedby="goal-error"><svg class="choice-icon" aria-hidden="true"><use href="#i-target"/></svg><span class="choice-text"><strong>Maintain Weight</strong><span>Keep your current weight.</span></span><span class="choice-check" aria-hidden="true">✓</span></label></fieldset><p class="field-error" id="goal-error"></p>
+          <fieldset class="units"><legend class="sr-only">Height unit</legend><label><input type="radio" name="heightUnit" value="cm" checked><span>cm</span></label><label><input type="radio" name="heightUnit" value="in"><span>in</span></label></fieldset><div class="picker-block"><span class="picker-label" id="height-label">Height</span><button type="button" class="picker-arrow" data-picker-change="height" data-direction="-1" aria-label="Decrease Height">⌃</button><div class="number-picker" id="picker-height" data-picker="height" tabindex="0" role="spinbutton" aria-labelledby="height-label" aria-describedby="picker-help"><div class="picker-rows" aria-hidden="true"></div></div><button type="button" class="picker-arrow" data-picker-change="height" data-direction="1" aria-label="Increase Height">⌄</button></div><p id="picker-help" class="picker-help">Scroll, swipe, tap a number, or use the arrow keys.</p>
           <p id="form-error" class="error-banner" role="alert" hidden></p>
           <nav class="step-actions" aria-label="Step navigation">
-            <a class="back-link" href="activity.html">Back</a>
+            <a class="back-link" href="weight.html">Back</a>
             <button class="next-button" id="next-button" type="submit">Next</button>
           </nav>
           
@@ -79,7 +79,7 @@
           <h2 id="completion-title" tabindex="-1">Your preferences are ready!</h2>
           <p id="completion-message" class="subtitle"></p>
           <dl id="summary" class="summary"></dl>
-          <div class="completion-actions"><button type="button" id="edit-preferences" class="text-link">Edit preferences</button><a href="index.html" class="next-button">Back to Welcome</a></div>
+          <div class="completion-actions"><button type="button" id="edit-preferences" class="text-link">Edit preferences</button><a href="../Welcome/index.html" class="next-button">Back to Welcome</a></div>
         </section>
       </div>
     </section>

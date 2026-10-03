@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#168454">
-  <title>Your weight | Calorie</title>
+  <title>Preferred diet | Calorie</title>
   <link rel="stylesheet" href="signup.css">
   <script src="signup.js" defer></script>
 </head>
-<body data-step="2">
+<body data-step="8">
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
 <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
 <symbol id="i-male" viewBox="0 0 48 48"><circle cx="24" cy="12" r="8"/><path d="M8 43c0-13 7-20 16-20s16 7 16 20Z"/></symbol>
@@ -60,16 +60,16 @@
           </svg>
           <span class="brand-name">Calorie</span>
         </div>
-        <p class="step-label">Step 2 of 8</p>
-        <progress class="step-progress" value="2" max="8" aria-label="Setup progress">2 of 8</progress>
-        <h1 id="step-title" tabindex="-1">Your weight</h1>
-        <p class="subtitle">Select your current weight.</p>
+        <p class="step-label">Step 8 of 8</p>
+        <progress class="step-progress" value="8" max="8" aria-label="Setup progress">8 of 8</progress>
+        <h1 id="step-title" tabindex="-1">Preferred diet</h1>
+        <p class="subtitle">Choose the meals you enjoy. You can change this later.</p>
         <p class="preview-note" id="preview-note" hidden>Preview mode · No account will be created.</p>
         <form id="step-form" novalidate>
-          <fieldset class="units"><legend class="sr-only">Weight unit</legend><label><input type="radio" name="weightUnit" value="kg" checked><span>kg</span></label><label><input type="radio" name="weightUnit" value="lb"><span>lb</span></label></fieldset><div class="picker-block"><span class="picker-label" id="weight-label">Weight</span><button type="button" class="picker-arrow" data-picker-change="weight" data-direction="-1" aria-label="Decrease Weight">⌃</button><div class="number-picker" id="picker-weight" data-picker="weight" tabindex="0" role="spinbutton" aria-labelledby="weight-label" aria-describedby="picker-help"><div class="picker-rows" aria-hidden="true"></div></div><button type="button" class="picker-arrow" data-picker-change="weight" data-direction="1" aria-label="Increase Weight">⌄</button></div><p id="picker-help" class="picker-help">Scroll, swipe, tap a number, or use the arrow keys.</p>
+          <fieldset class="choice-group "><legend class="sr-only">Select diet</legend><label class="choice-card"><input type="radio" name="diet" value="no-preference" aria-describedby="diet-error"><svg class="choice-icon" aria-hidden="true"><use href="#i-food"/></svg><span class="choice-text"><strong>No Preference</strong><span>Include all food options.</span></span><span class="choice-check" aria-hidden="true">✓</span></label><label class="choice-card"><input type="radio" name="diet" value="vegetarian" aria-describedby="diet-error"><svg class="choice-icon" aria-hidden="true"><use href="#i-leaf"/></svg><span class="choice-text"><strong>Vegetarian</strong><span>No meat or fish; may include eggs and dairy.</span></span><span class="choice-check" aria-hidden="true">✓</span></label><label class="choice-card"><input type="radio" name="diet" value="vegan" aria-describedby="diet-error"><svg class="choice-icon" aria-hidden="true"><use href="#i-sprout"/></svg><span class="choice-text"><strong>Vegan</strong><span>No animal products.</span></span><span class="choice-check" aria-hidden="true">✓</span></label></fieldset><p class="field-error" id="diet-error"></p>
           <p id="form-error" class="error-banner" role="alert" hidden></p>
           <nav class="step-actions" aria-label="Step navigation">
-            <a class="back-link" href="signup.html">Back</a>
+            <a class="back-link" href="goal.html">Back</a>
             <button class="next-button" id="next-button" type="submit">Next</button>
           </nav>
           
@@ -79,7 +79,7 @@
           <h2 id="completion-title" tabindex="-1">Your preferences are ready!</h2>
           <p id="completion-message" class="subtitle"></p>
           <dl id="summary" class="summary"></dl>
-          <div class="completion-actions"><button type="button" id="edit-preferences" class="text-link">Edit preferences</button><a href="index.html" class="next-button">Back to Welcome</a></div>
+          <div class="completion-actions"><button type="button" id="edit-preferences" class="text-link">Edit preferences</button><a href="../Welcome/index.html" class="next-button">Back to Welcome</a></div>
         </section>
       </div>
     </section>

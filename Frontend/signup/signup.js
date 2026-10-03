@@ -197,7 +197,7 @@ function initializeSignup() {
     });
   });
   document.querySelector("#login-link").addEventListener("click", () => {
-    if (CONFIG.loginUrl) window.location.assign(CONFIG.loginUrl);
+    if (CONFIG.loginUrl) window.location.href ='../login/login.html';
     else showError("The Login page is not connected yet.");
   });
   if (draft.account) {

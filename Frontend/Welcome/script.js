@@ -1,12 +1,10 @@
 "use strict";
 
 // ===== 1. Authentication page routes =====
-// Only the Welcome page is included in this project.
-// After creating the other pages, replace null with their actual paths:
-// login: "login.html", signup: "signup.html"
+// Both routes point to the pages included in this project.
 const routes = {
-  login: null,
-  signup: null,
+  login: "../login/login.html",
+  signup: "../signup/signup.html",
 };
 
 // ===== 2. Button navigation =====
@@ -19,7 +17,7 @@ actionButtons.forEach((button) => {
     const destination = routes[action];
 
     if (destination) {
-      window.location.assign(destination);
+      window.location.href = destination;
       return;
     }
 

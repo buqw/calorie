@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#168454">
-  <title>Your gender | Calorie</title>
+  <title>Create your account | Calorie</title>
   <link rel="stylesheet" href="signup.css">
   <script src="signup.js" defer></script>
 </head>
-<body data-step="5">
+<body data-step="1">
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
 <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
 <symbol id="i-male" viewBox="0 0 48 48"><circle cx="24" cy="12" r="8"/><path d="M8 43c0-13 7-20 16-20s16 7 16 20Z"/></symbol>
@@ -60,26 +60,31 @@
           </svg>
           <span class="brand-name">Calorie</span>
         </div>
-        <p class="step-label">Step 5 of 8</p>
-        <progress class="step-progress" value="5" max="8" aria-label="Setup progress">5 of 8</progress>
-        <h1 id="step-title" tabindex="-1">Your gender</h1>
-        <p class="subtitle">This helps us personalize your nutrition plan.</p>
+        <p class="step-label">Step 1 of 8</p>
+        <progress class="step-progress" value="1" max="8" aria-label="Setup progress">1 of 8</progress>
+        <h1 id="step-title" tabindex="-1">Create your account</h1>
+        <p class="subtitle">Start your personalized nutrition journey.</p>
         <p class="preview-note" id="preview-note" hidden>Preview mode · No account will be created.</p>
         <form id="step-form" novalidate>
-          <fieldset class="choice-group choice-tiles"><legend class="sr-only">Select gender</legend><label class="choice-card"><input type="radio" name="gender" value="male" aria-describedby="gender-error"><svg class="choice-icon" aria-hidden="true"><use href="#i-male"/></svg><span class="choice-text"><strong>Male</strong><span></span></span><span class="choice-check" aria-hidden="true">✓</span></label><label class="choice-card"><input type="radio" name="gender" value="female" aria-describedby="gender-error"><svg class="choice-icon" aria-hidden="true"><use href="#i-female"/></svg><span class="choice-text"><strong>Female</strong><span></span></span><span class="choice-check" aria-hidden="true">✓</span></label></fieldset><p class="field-error" id="gender-error"></p>
+          <div class="signup-fields">
+ <div class="form-field"><label for="username">Username</label><input id="username" name="username" type="text" placeholder="Choose a username" autocomplete="username" minlength="3" maxlength="30" required aria-describedby="username-hint username-error"><small id="username-hint">3–30 letters, numbers, or underscores.</small><p class="field-error" id="username-error"></p></div>
+ <div class="form-field"><label for="email">Email</label><input id="email" name="email" type="email" placeholder="Enter your email address" autocomplete="email" maxlength="254" required aria-describedby="email-error"><p class="field-error" id="email-error"></p></div>
+ <div class="form-field password-field"><label for="password">Password</label><div class="password-wrapper"><input id="password" name="password" type="password" placeholder="Create a password" autocomplete="new-password" minlength="8" maxlength="128" required aria-describedby="password-hint password-error"><button type="button" class="eye-button" data-toggle-password="password" aria-label="Show password" aria-pressed="false"><svg aria-hidden="true"><use href="#i-eye"/></svg></button></div><small id="password-hint">Use 8–128 characters.</small><p class="field-error" id="password-error"></p></div>
+ <div class="form-field password-field"><label for="confirmPassword">Confirm Password</label><div class="password-wrapper"><input id="confirmPassword" name="confirmPassword" type="password" placeholder="Confirm your password" autocomplete="new-password" required aria-describedby="confirmPassword-error"><button type="button" class="eye-button" data-toggle-password="confirmPassword" aria-label="Show confirm password" aria-pressed="false"><svg aria-hidden="true"><use href="#i-eye"/></svg></button></div><p class="field-error" id="confirmPassword-error"></p></div>
+</div><p id="existing-account-note" class="note" hidden></p>
           <p id="form-error" class="error-banner" role="alert" hidden></p>
           <nav class="step-actions" aria-label="Step navigation">
-            <a class="back-link" href="birthdate.html">Back</a>
+            <a class="back-link" href="../Welcome/index.html">Back</a>
             <button class="next-button" id="next-button" type="submit">Next</button>
           </nav>
-          
+          <p class="login-line">Already have an account? <button type="button" id="login-link" class="text-link">Login</button></p>
         </form>
         <section id="completion" hidden aria-labelledby="completion-title">
           <div class="success-mark" aria-hidden="true">✓</div>
           <h2 id="completion-title" tabindex="-1">Your preferences are ready!</h2>
           <p id="completion-message" class="subtitle"></p>
           <dl id="summary" class="summary"></dl>
-          <div class="completion-actions"><button type="button" id="edit-preferences" class="text-link">Edit preferences</button><a href="index.html" class="next-button">Back to Welcome</a></div>
+          <div class="completion-actions"><button type="button" id="edit-preferences" class="text-link">Edit preferences</button><a href="../Welcome/index.html" class="next-button">Back to Welcome</a></div>
         </section>
       </div>
     </section>
