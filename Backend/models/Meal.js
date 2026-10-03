@@ -16,7 +16,7 @@ const mealSchema = new Schema({
 
     mealType: {
       type: String,
-      enum: ["breakfast", "lunch", "dinner", "snack"],
+      enum: ["breakfast", "lunch", "dinner", "snack", "other"],
       required: true
     },
 
