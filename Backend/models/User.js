@@ -34,8 +34,28 @@ const userSchema = new Schema({
       unique: true,
       sparse: true
     },
-    //Personal Info
 
+    resetPasswordCode: {
+      type: String,
+      default: null
+    },
+
+    resetPasswordCodeExpires: {
+      type: Date,
+      default: null
+    },
+
+    resetToken: {
+      type: String,
+      default: null
+    },
+
+    resetTokenExpires: {
+      type: Date,
+      default: null
+    },
+
+    //Personal Info
     birthDate: {
       type: Date,
       required: true
