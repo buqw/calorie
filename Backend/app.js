@@ -19,7 +19,9 @@ app.use('/api/meals', mealRoutes)
 //Dashboard routes
 const dashboardRoutes = require('./routes/dashboardRoutes');
 app.use('/api/dashboard', dashboardRoutes)
-
+// History routes
+const historyRoutes = require('./routes/historyRoutes');
+app.use('/api/history', historyRoutes);
 
 // MongoDB Connection
 mongoose.connect(process.env.Mongo_URI)
