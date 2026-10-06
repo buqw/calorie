@@ -117,15 +117,6 @@ const userSchema = new Schema({
       default: 0
     },
 
-    level: {
-      type: Number,
-      default: 1
-    },
-
-    streak: {
-      type: Number,
-      default: 0
-    },
 }, 
   {
     timestamps: true

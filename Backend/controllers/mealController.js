@@ -1,4 +1,5 @@
 const Meal = require('../models/Meal')
+const { addXP } = require('../utils/gamification')
 const OpenAI = require('openai')
 const sharp = require('sharp')
 
@@ -31,6 +32,11 @@ const addMealWithNutritions = async (req,res) => {
             name,
             mealType,
             nutrition
+        })
+
+        //Update XP
+        addXP(req.user._id, 10).catch(err => {
+            console.log('Failed to update xp')
         })
 
         res.status(201).json({
@@ -121,6 +127,11 @@ const addMealWithIngredients = async (req,res) =>{
             mealType: mealType || 'other',
             ingredients: aiResult.ingredients,
             nutrition: aiResult.nutrition
+        })
+
+        //Update XP
+        addXP(req.user._id, 10).catch(err => {
+            console.log('Failed to update xp')
         })
 
         res.status(201).json({
@@ -241,6 +252,11 @@ const addMealByImage = async (req, res) => {
             nutrition: aiResult.nutrition
         });
 
+        //Update XP
+        addXP(req.user._id, 10).catch(err => {
+            console.log('Failed to update xp')
+        })
+
         res.status(201).json({
             success: true,
             meal
@@ -287,6 +303,11 @@ const deleteMeal = async (req, res) => {
                 message: 'Meal not found.'
             })
         }
+
+        //Update XP
+        addXP(req.user._id, -10).catch(err => {
+            console.log('Failed to update xp')
+        })
 
         res.status(200).json({
             message: 'Meal deleted successfully.'

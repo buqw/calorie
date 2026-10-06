@@ -1,4 +1,5 @@
 const Meal = require('../models/Meal');
+const {getLevelInfo} = require('../utils/gamification')
 
 // Get last 7 days dashboards
 const getDashboard = async (req,res) => {
@@ -21,7 +22,6 @@ const getDashboard = async (req,res) => {
             }
         }).sort({date: -1})
         
-        const calorieTarget = calculateCalorieTarget(req.user);
         const targets = calculateNutritionTargets(req.user);
 
         const days = [];
@@ -151,8 +151,31 @@ const getDashboard = async (req,res) => {
             });
         }
 
+        //Calculate streak
+        let streak = 0;
+
+        for(let i=0; i<days.length; i++){
+            const day = days[i];
+            if(day.mealsCount > 0){
+                streak++;
+            }else{
+                if(i===0){
+                    continue;
+                }
+
+                break;
+            }
+        }
+
+        //Calculating level
+        const levelInfo = getLevelInfo(req.user.xp);
+
         res.status(200).json({
             success: true,
+            gamification: {
+                ...levelInfo,
+                streak
+            },
             days
         });
 
@@ -183,54 +206,6 @@ const calculateAge = (birthDate) => {
     return age;
 };
 
-const calculateCalorieTarget = (user) => {
-    const age = calculateAge(user.birthDate);
-
-    const weight = user.weight.value;
-    const height = user.height.value;
-
-    let bmr;
-
-    if (user.height.unit === 'in') {
-        const heightCm = height * 2.54;
-
-        bmr = user.gender === 'male'
-            ? (10 * weight) + (6.25 * heightCm) - (5 * age) + 5
-            : (10 * weight) + (6.25 * heightCm) - (5 * age) - 161;
-
-    } else {
-        bmr = user.gender === 'male'
-            ? (10 * weight) + (6.25 * height) - (5 * age) + 5
-            : (10 * weight) + (6.25 * height) - (5 * age) - 161;
-    }
-
-
-    const activityFactors = {
-        sedentary: 1.2,
-        light: 1.375,
-        moderate: 1.55,
-        active: 1.725,
-        very_active: 1.9
-    };
-
-    const activityFactor =
-        activityFactors[user.activityLevel] || 1.2;
-
-
-    let calories = bmr * activityFactor;
-
-
-    if (user.goal === 'lose_weight') {
-        calories -= 500;
-    }
-
-    if (user.goal === 'gain_weight') {
-        calories += 300;
-    }
-
-
-    return Math.round(calories);
-};
 const calculateNutritionTargets = (user) => {
 
     const age = calculateAge(user.birthDate);
