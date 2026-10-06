@@ -8,12 +8,14 @@ const getHistory = async (req, res) => {
 
     if (range === '7') {
       startDate = new Date();
-      startDate.setDate(startDate.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
+      startDate.setDate(startDate.getDate() - 6);
     } 
     
     else if (range === '30') {
       startDate = new Date();
-      startDate.setDate(startDate.getDate() - 30);
+      startDate.setHours(0, 0, 0, 0);
+      startDate.setDate(startDate.getDate() - 29);
     } 
     
     else if (range !== 'all') {
@@ -61,6 +63,20 @@ const getHistory = async (req, res) => {
         carbs: meal.nutrition.carbs || 0,
         fat: meal.nutrition.fat || 0
       });
+    });
+
+    const mealOrder = {
+        breakfast: 1,
+        lunch: 2,
+        dinner: 3,
+        snack: 4,
+        other: 5
+    };
+
+    Object.values(history).forEach((day) => {
+        day.meals.sort((a, b) => {
+            return mealOrder[a.mealType] - mealOrder[b.mealType];
+        });
     });
 
     res.status(200).json(
