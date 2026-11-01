@@ -22,6 +22,10 @@ app.use('/api/dashboard', dashboardRoutes)
 // History routes
 const historyRoutes = require('./routes/historyRoutes');
 app.use('/api/history', historyRoutes);
+//Friend routes
+const friendsRoutes = require('./routes/friendsRoutes');
+app.use('/api/friends', friendsRoutes);
+
 
 // MongoDB Connection
 mongoose.connect(process.env.Mongo_URI)

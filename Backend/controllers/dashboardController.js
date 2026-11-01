@@ -212,34 +212,44 @@ const calculateNutritionTargets = (user) => {
 
     /*
     =========================
-    CALORIES
+    WEIGHT & HEIGHT
     =========================
     */
 
-    const weight = user.weight.value;
+    // Convert weight to KG
+    const weightKg =
+        user.weight.unit === 'lb'
+            ? user.weight.value * 0.453592
+            : user.weight.value;
 
+    // Convert height to CM
     let height = user.height.value;
 
     if (user.height.unit === 'in') {
         height = height * 2.54;
     }
 
+    /*
+    =========================
+    CALORIES (BMR)
+    =========================
+    */
+
     let bmr;
 
     if (user.gender === 'male') {
         bmr =
-            (10 * weight) +
+            (10 * weightKg) +
             (6.25 * height) -
             (5 * age) +
             5;
     } else {
         bmr =
-            (10 * weight) +
+            (10 * weightKg) +
             (6.25 * height) -
             (5 * age) -
             161;
     }
-
 
     const activityFactors = {
         sedentary: 1.2,
@@ -249,13 +259,10 @@ const calculateNutritionTargets = (user) => {
         very_active: 1.9
     };
 
-
     const activityFactor =
         activityFactors[user.activityLevel] || 1.2;
 
-
     let calories = bmr * activityFactor;
-
 
     if (user.goal === 'lose_weight') {
         calories -= 500;
@@ -265,9 +272,7 @@ const calculateNutritionTargets = (user) => {
         calories += 300;
     }
 
-
     calories = Math.round(calories);
-
 
     /*
     =========================
@@ -278,16 +283,13 @@ const calculateNutritionTargets = (user) => {
     let protein;
 
     if (user.goal === 'lose_weight') {
-        protein = weight * 2;
+        protein = weightKg * 2;
     } else {
-        protein = weight * 1.6;
+        protein = weightKg * 1.6;
     }
 
-
     const fatCalories = calories * 0.25;
-
     const fat = fatCalories / 9;
-
 
     const proteinCalories = protein * 4;
 
@@ -295,7 +297,6 @@ const calculateNutritionTargets = (user) => {
         calories - proteinCalories - fatCalories;
 
     const carbs = carbsCalories / 4;
-
 
     /*
     =========================
@@ -325,7 +326,6 @@ const calculateNutritionTargets = (user) => {
 
     }
 
-
     /*
     =========================
     MINERALS
@@ -354,6 +354,11 @@ const calculateNutritionTargets = (user) => {
 
     }
 
+    /*
+    =========================
+    RETURN
+    =========================
+    */
 
     return {
 
@@ -383,5 +388,6 @@ const calculateProgress = (consumed, target) => {
     };
 };
 module.exports = {
-    getDashboard
+    getDashboard,
+    calculateNutritionTargets
 }
