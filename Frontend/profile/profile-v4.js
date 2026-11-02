@@ -10,9 +10,12 @@ const PROFILE_CONFIG = {
   deleteAccountUrl: null,
   deleteAccountMethod: "DELETE",
   logoutUrl: null,
-  loginPage: "login.html", // Existing Login page, in the same folder.
+  loginPage: "../login/login.html",
   getAuthHeaders: () => ({}), // Add Authorization here if your API uses a bearer token.
-  routes: { home: null, meals: null, ai: null, history: null, friends: null },
+  routes: {
+    home: "../dashboard/dashboard.html", meals: "../add-meal/add-meal.html",
+    ai: "../chatbot/chatbot.html", history: "../history/history.html", friends: "../friends/friends.html",
+  },
 };
 const $ = (id) => document.getElementById(id);
 const clone = (value) => JSON.parse(JSON.stringify(value));

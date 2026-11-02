@@ -1,0 +1,80 @@
+/* Shared viewport layout for the authenticated Calorie pages. */
+:root {
+  --app-shell-inset: clamp(8px, 1.25vw, 20px);
+  --app-shell-gap: clamp(10px, 1.25vw, 20px);
+  --app-sidebar-width: clamp(190px, 18vw, 240px);
+}
+
+html,
+body {
+  height: 100%;
+  min-height: 0;
+}
+
+body {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-layout {
+  display: grid;
+  grid-template-columns: var(--app-sidebar-width) minmax(0, 1fr);
+  gap: var(--app-shell-gap);
+  width: min(100%, 1700px);
+  height: 100dvh;
+  min-height: 0;
+  max-width: 1700px;
+  margin-inline: auto;
+  padding: var(--app-shell-inset);
+  overflow: hidden;
+}
+
+.sidebar {
+  position: fixed;
+  z-index: 5;
+  top: var(--app-shell-inset);
+  bottom: var(--app-shell-inset);
+  left: max(var(--app-shell-inset), calc((100vw - 1700px) / 2 + var(--app-shell-inset)));
+  width: var(--app-sidebar-width);
+  height: auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.main-panel {
+  grid-column: 2;
+  min-height: 0;
+  height: calc(100dvh - 2 * var(--app-shell-inset));
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+@media (max-width: 900px) {
+  .app-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: relative;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    width: auto;
+    height: auto;
+    max-height: 100%;
+    overflow: visible;
+  }
+
+  .main-panel {
+    grid-column: 1;
+    grid-row: 2;
+    height: auto;
+    max-height: none;
+  }
+}

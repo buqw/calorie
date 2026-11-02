@@ -9,8 +9,8 @@ const CHAT_CONFIG = {
   timeoutMs: 30000,
 };
 const CHAT_ROUTES = {
-  dashboard: "dashboard.html", meals: "add-meal.html", ai: "chatbot.html",
-  history: "history.html", friends: "friends.html", profile: "profile.html", login: "login.html",
+  dashboard: "../dashboard/dashboard.html", meals: "../add-meal/add-meal.html", ai: "../chatbot/chatbot.html",
+  history: "../history/history.html", friends: "../friends/friends.html", profile: "../profile/profile-v4.html", login: "../login/login.html",
 };
 const element = (id) => document.getElementById(id);
 let sending = false;

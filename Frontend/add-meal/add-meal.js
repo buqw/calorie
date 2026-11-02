@@ -10,8 +10,8 @@ const MEAL_API = {
   getHeaders: function () { return {}; }, // Use the same auth headers as Dashboard.
 };
 const MEAL_ROUTES = {
-  dashboard: "dashboard.html", meals: "add-meal.html", ai: "chatbot.html",
-  history: "history.html", friends: "friends.html", profile: "profile.html", login: "login.html",
+  dashboard: "../dashboard/dashboard.html", meals: "../add-meal/add-meal.html", ai: "../chatbot/chatbot.html",
+  history: "../history/history.html", friends: "../friends/friends.html", profile: "../profile/profile-v4.html", login: "../login/login.html",
 };
 const field = function (id) { return document.getElementById(id); };
 let method = "nutrition";

@@ -25,9 +25,9 @@ const API_CONFIG = {
   getHeaders: function () { return {}; }, // Bearer auth? Return { Authorization: "Bearer " + yourExistingToken }.
 };
 const PAGE_ROUTES = {
-  dashboard: "dashboard.html", meals: "add-meal.html", addMeal: "add-meal.html",
-  ai: "chatbot.html", history: "history.html", friends: "friends.html",
-  profile: "profile.html", login: "login.html",
+  dashboard: "../dashboard/dashboard.html", meals: "../add-meal/add-meal.html", addMeal: "../add-meal/add-meal.html",
+  ai: "../chatbot/chatbot.html", history: "../history/history.html", friends: "../friends/friends.html",
+  profile: "../profile/profile-v4.html", login: "../login/login.html",
 };
 // If your account API uses different field names, change this one function.
 // Supported example: {user:{username,streak,level,xp,xpTarget}}.

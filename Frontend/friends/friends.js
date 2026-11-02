@@ -10,9 +10,15 @@ const FRIENDS_CONFIG = {
   credentials: 'include',
   getHeaders: () => ({})  // Optional authentication headers; never embed secret keys.
 };
+const FRIENDS_ROUTES = {
+  dashboard: '../dashboard/dashboard.html', meals: '../add-meal/add-meal.html',
+  ai: '../chatbot/chatbot.html', history: '../history/history.html',
+  friends: '../friends/friends.html', profile: '../profile/profile-v4.html', login: '../login/login.html'
+};
 
 let friends = [];
 let requests = [];
+let dataUnavailable = false;
 let activeTab = 'friends';
 let busy = false;
 let progressController;
@@ -74,7 +80,7 @@ function render() {
   const query=$('search').value.trim().toLowerCase().replace(/^@/,'');
   const items=(activeTab==='friends'?friends:requests).filter(f=>String(f.username || '').toLowerCase().includes(query));
   items.sort((a,b)=>$('sort').value==='streak'?(b.streak||0)-(a.streak||0):$('sort').value==='progress'?(getProgress(b.calories?.consumed,b.calories?.target).percent ?? -1)-(getProgress(a.calories?.consumed,a.calories?.target).percent ?? -1):String(a.name||a.username).localeCompare(String(b.name||b.username)));
-  if(!items.length) list.append(element('p','empty',query?'No matching usernames.':activeTab==='friends'?'No friends yet.':'No pending friend requests.'));
+  if(!items.length) list.append(element('p','empty',dataUnavailable?'This list could not be loaded.':query?'No matching usernames.':activeTab==='friends'?'No friends yet.':'No pending friend requests.'));
   for(const friend of items) {
     if(activeTab==='requests') {
       const row=element('div','request-row'); row.append(person(friend));
@@ -119,16 +125,20 @@ function validateList(data,key) {
 async function load() {
   if(busy) return;
   if(!FRIENDS_CONFIG.friendsUrl || !FRIENDS_CONFIG.requestsUrl) {
-    friends=[]; requests=[]; showError(); $('status').textContent=''; render(); return;
+    dataUnavailable=true;
+    showError('Friends and requests could not be refreshed because their API URLs are not configured.');
+    $('status').textContent='Could not refresh friends.';
+    render(); return;
   }
   busy=true;$('refresh').disabled=true;showError();$('status').textContent='Loading…';render();
   try {
     {
       const [f,r]=await Promise.all([request(FRIENDS_CONFIG.friendsUrl),request(FRIENDS_CONFIG.requestsUrl)]);
       const nextFriends=validateList(f,'friends'),nextRequests=validateList(r,'requests');friends=nextFriends;requests=nextRequests;
+      dataUnavailable=false;
       $('status').textContent='Friends updated.';
     }
-  } catch(error) {showError(error.name==='AbortError'?'Request timed out. Please try again.':error.message);$('status').textContent='Could not refresh friends.';}
+  } catch(error) {dataUnavailable=true;showError(error.name==='AbortError'?'Request timed out. Please try again.':error.message);$('status').textContent='Could not refresh friends.';}
   finally {busy=false;$('refresh').disabled=false;render();}
 }
 async function performAction(action,item) {
@@ -172,5 +182,6 @@ $('search-form').addEventListener('submit',event=>{event.preventDefault();render
 $('search').addEventListener('input',render);$('sort').addEventListener('change',render);$('refresh').addEventListener('click',load);
 $('close-dialog').addEventListener('click',()=>$('progress-dialog').close());
 $('progress-dialog').addEventListener('close',()=>progressController?.abort());
-$('logout').addEventListener('click',async()=>{try{{if(!FRIENDS_CONFIG.logoutUrl) throw new Error('Configure logoutUrl in friends.js.');await request(FRIENDS_CONFIG.logoutUrl,{method:'POST'});}location.href='login.html';}catch(error){showError(error.message);}});
+document.querySelectorAll('[data-route]').forEach(link=>{if(FRIENDS_ROUTES[link.dataset.route]) link.href=FRIENDS_ROUTES[link.dataset.route];});
+$('logout').addEventListener('click',async()=>{try{{if(!FRIENDS_CONFIG.logoutUrl) throw new Error('Configure logoutUrl in friends.js.');await request(FRIENDS_CONFIG.logoutUrl,{method:'POST'});}location.href=FRIENDS_ROUTES.login;}catch(error){showError(error.message);}});
 load();

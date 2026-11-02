@@ -7,7 +7,7 @@ const CONFIG = {
   registerUrl: null, // Example: "/api/auth/register"
   profileUrl: null,  // Example: "/api/users/me/profile"
   loginUrl: "login.html",
-  dashboardUrl: null, // Example: "dashboard.html"
+  dashboardUrl: "../dashboard/dashboard.html",
 };
 const PAGES = ["signup.html", "weight.html", "height.html", "birthdate.html",
   "gender.html", "activity.html", "goal.html", "diet.html"];
@@ -460,7 +460,6 @@ async function submitStep(event) {
 
 // ===== 7. Initialize this standalone step page =====
 if (enforceSequence()) {
-  document.querySelector("#preview-note").hidden = Boolean(CONFIG.registerUrl);
   if (step === 1) initializeSignup();
   if (step >= 2 && step <= 4) initializePickers();
   if (step >= 5) initializeChoices();
