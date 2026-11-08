@@ -79,8 +79,6 @@ function showResetView(show) {
   document.getElementById("login-subtitle").textContent = show
     ? "Enter your email to request a password reset link."
     : "Log in to continue your nutrition journey.";
-  const preview = document.getElementById("preview-note");
-  preview.hidden = Boolean(show ? LOGIN_CONFIG.forgotPasswordUrl : LOGIN_CONFIG.loginUrl);
   if (show) {
     document.getElementById("reset-email").value = document.getElementById("email").value;
     document.getElementById("password").value = "";
@@ -170,7 +168,6 @@ async function submitReset(event) {
 }
 
 // ===== 6. Initialize =====
-document.getElementById("preview-note").hidden = Boolean(LOGIN_CONFIG.loginUrl);
 document.getElementById("toggle-password").addEventListener("click", togglePassword);
 document.getElementById("forgot-password").addEventListener("click", () => showResetView(true));
 document.getElementById("back-to-login").addEventListener("click", () => showResetView(false));

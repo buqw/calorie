@@ -15,6 +15,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   color: var(--text);
   background: radial-gradient(ellipse at center, #f7fbf5, var(--background));
   font-family: Arial, Helvetica, sans-serif;
@@ -43,7 +44,7 @@ button:focus-visible, a:focus-visible, .number-picker:focus-visible {
 .icon-library { position: absolute; width: 0; height: 0; overflow: hidden; }
 
 /* ===== 2. White card, same style as Welcome ===== */
-.setup-page { width: min(100%, 1040px); margin: 0 auto; padding: 26px 28px; }
+.setup-page { width: min(100%, 1040px); margin: 0 auto; padding: clamp(14px, 2.2vh, 26px) clamp(12px, 2vw, 28px); }
 .page-label {
   margin: 0 0 20px;
   color: #707572;
@@ -66,9 +67,8 @@ button:focus-visible, a:focus-visible, .number-picker:focus-visible {
   position: relative;
   z-index: 1;
   width: min(100%, 630px);
-  min-height: 690px;
   margin: 0 auto;
-  padding: 55px 30px 42px;
+  padding: clamp(24px, 5vh, 55px) 30px 42px;
   text-align: center;
 }
 .brand { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 22px; }
@@ -234,7 +234,7 @@ h2 { font-size: 27px; }
 
 /* ===== 8. Tablet and phone ===== */
 @media (max-width: 900px) {
-  .setup-page { max-width: 760px; padding: 24px; }
+  .setup-page { max-width: 760px; padding: clamp(14px, 2.5vh, 24px); }
   .decoration-top, .decoration-bottom { width: 180px; opacity: .65; }
   .setup-content { padding-top: 45px; }
 }
@@ -263,5 +263,52 @@ h2 { font-size: 27px; }
   .decoration-top, .decoration-bottom { width: 120px; opacity: .5; }
   .completion-actions { flex-direction: column; }
   .completion-actions .next-button { width: 100%; }
+}
+@media (min-width: 561px) and (max-height: 900px) {
+  .setup-content { padding-top: clamp(16px, 2.5vh, 24px); padding-bottom: 24px; }
+  .brand { margin-bottom: 12px; }
+  .subtitle { margin-bottom: 18px; }
+  .form-field { margin-bottom: 12px; }
+  .step-actions { margin-top: 20px; }
+  .birthdate-pickers { margin-top: 20px; }
+  .choice-group { gap: 8px; }
+  .choice-card { min-height: 72px; padding-block: 11px; }
+  .choice-tiles .choice-card { min-height: clamp(155px, 20vh, 180px); }
+}
+@media (min-width: 561px) {
+  .setup-card { min-height: clamp(600px, calc(100vh - 140px), 760px); }
+  .setup-card { min-height: clamp(600px, calc(100dvh - 140px), 760px); }
+  .choice-group {
+    width: min(100%, 520px);
+    grid-auto-rows: 1fr;
+    margin-inline: auto;
+  }
+  .choice-card { width: 100%; }
+}
+/* Measurement pickers: keep both steps compact and visually balanced. */
+@media (min-width: 561px) {
+  body[data-step="2"],
+  body[data-step="3"] { --picker-row: 40px; }
+  body[data-step="2"] .units,
+  body[data-step="3"] .units { margin-bottom: 16px; }
+  body[data-step="2"] .picker-arrow,
+  body[data-step="3"] .picker-arrow { min-height: 36px; }
+  body[data-step="2"] .picker-help,
+  body[data-step="3"] .picker-help { margin-top: 12px; }
+}
+/* Selection lists: equal rows and a shared centered width on the affected steps. */
+@media (min-width: 561px) {
+  body[data-step="6"] .choice-group,
+  body[data-step="7"] .choice-group,
+  body[data-step="8"] .choice-group {
+    width: min(100%, 500px);
+    grid-auto-rows: 1fr;
+    margin-inline: auto;
+  }
+  body[data-step="6"] .choice-card,
+  body[data-step="7"] .choice-card,
+  body[data-step="8"] .choice-card {
+    width: 100%;
+  }
 }
 @media (prefers-reduced-motion: reduce) { .next-button { transition: none; } }
