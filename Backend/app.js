@@ -1,11 +1,18 @@
 const express = require('express')
 const app = express();
+const cors = require("cors");
+
 require('dotenv').config();
 const mongoose = require('mongoose')
 const cookieParser = require('cookie-parser')
 
 app.use(express.json())
 app.use(cookieParser())
+
+app.use(cors({
+    origin: "http://127.0.0.1:5500",
+    credentials: true
+}));
 
 //Auth Routes
 const authRoutes = require('./routes/AuthRoutes')
