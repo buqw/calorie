@@ -141,6 +141,83 @@ const logout = (req, res) => {
     });
 };
 
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        // Validate input
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Current password and new password are required.'
+            });
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message: 'New password must be at least 8 characters.'
+            });
+        }
+
+        // Get authenticated user
+        const user = req.user;
+
+        // Verify current password
+        const passwordMatch = await crypt.compare(
+            currentPassword,
+            user.password
+        );
+
+        if (!passwordMatch) {
+            return res.status(400).json({
+                success: false,
+                message: 'Current password is incorrect.'
+            });
+        }
+
+        // Prevent using the same password
+        const samePassword = await crypt.compare(
+            newPassword,
+            user.password
+        );
+
+        if (samePassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'New password must be different from current password.'
+            });
+        }
+
+        // Hash new password
+        user.password = await crypt.hash(newPassword, 10);
+
+        // Generate a new token
+        const token = crypto.randomBytes(32).toString('hex');
+        user.token = token;
+
+        await user.save();
+
+        // Update authentication cookie
+        res.cookie('token', token, {
+            httpOnly: true
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Password changed successfully.'
+        });
+
+    } catch (error) {
+        console.error('Change password error:', error);
+
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to change password.'
+        });
+    }
+};
+
 const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -408,6 +485,7 @@ module.exports = {
     register,
     login,
     logout,
+    changePassword,
     forgotPassword,
     verifyResetCode,
     resetPassword,
