@@ -7,7 +7,8 @@ const {
     logout,
     forgotPassword,
     verifyResetCode,
-    resetPassword
+    resetPassword,
+    deleteAccount
 } = require('../controllers/AuthController')
 
 router.post("/register", register);
@@ -16,5 +17,5 @@ router.post('/logout', authMiddleware, logout);
 router.post('/forgotPassword', forgotPassword);
 router.post('/verifyResetCode', verifyResetCode);
 router.post('/resetPassword', resetPassword)
-
+router.delete('/deleteAccount',authMiddleware,deleteAccount);
 module.exports = router;

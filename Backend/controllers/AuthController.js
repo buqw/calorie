@@ -1,6 +1,9 @@
+const mongoose = require('mongoose');
 const crypt = require('bcrypt')
 const crypto = require('crypto')
 const User = require('../models/User')
+const Meal = require('../models/Meal');
+const FriendRequest = require('../models/FriendRequest');
 const { sendResetCode } = require('../utils/email');
 
 
@@ -326,11 +329,87 @@ const resetPassword = async (req, res) => {
     }
 };
 
+const deleteAccount = async (req, res) => {
+    let session;
+
+    try {
+        const { confirmation } = req.body;
+
+        if (confirmation !== 'DELETE') {
+            return res.status(400).json({
+                success: false,
+                message: 'Please type DELETE to confirm account deletion.'
+            });
+        }
+
+        const userId = req.user._id;
+
+        session = await mongoose.startSession();
+
+        await session.withTransaction(async () => {
+
+            // Delete user's meals
+            await Meal.deleteMany(
+                { user: userId },
+                { session }
+            );
+
+            // Delete sent and received friend requests
+            await FriendRequest.deleteMany(
+                {
+                    $or: [
+                        { sender: userId },
+                        { receiver: userId }
+                    ]
+                },
+                { session }
+            );
+
+            // Remove user from other users' friends lists
+            await User.updateMany(
+                { friends: userId },
+                { $pull: { friends: userId } },
+                { session }
+            );
+
+            // Delete user account
+            await User.deleteOne(
+                { _id: userId },
+                { session }
+            );
+        });
+
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'lax'
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Account deleted successfully.'
+        });
+
+    } catch (error) {
+        console.error('Delete account error:', error);
+
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to delete account.'
+        });
+
+    } finally {
+        if (session) {
+            await session.endSession();
+        }
+    }
+};
 module.exports = {
     register,
     login,
     logout,
     forgotPassword,
     verifyResetCode,
-    resetPassword
+    resetPassword,
+    deleteAccount
 }
