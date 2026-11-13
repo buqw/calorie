@@ -1,53 +1,52 @@
-const express = require('express')
+const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/upload')
-const authMiddleware = require('../middleware/authMiddleware')
 
-//Controllers
+const upload = require('../middleware/upload');
+const authMiddleware = require('../middleware/authMiddleware');
+
 const {
-    addMealWithNutritions,
-    addMealWithIngredients,
-    addMealByImage,
+    saveReviewedMeal,
+    analyzeMealWithIngredients,
+    analyzeMealByImage,
     getMeals,
     deleteMeal
-} = require('../controllers/mealController')
+} = require('../controllers/mealController');
 
-                        //Routes
-
-// add meal by nutritions
+// Analyze ingredients - no saving
 router.post(
-    '/addByNutrition',
+    '/analyzeIngredients',
     authMiddleware,
-    addMealWithNutritions
-)
+    analyzeMealWithIngredients
+);
 
-// Add meal by Ingredients
+// Analyze image - no saving
 router.post(
-    '/addByIngredients',
+    '/analyzeImage',
     authMiddleware,
-    addMealWithIngredients
-)
+    upload.single('photo'),
+    analyzeMealByImage
+);
 
-// Add meal by image
+// Save reviewed meal
 router.post(
-    '/addByImage',
+    '/saveReviewedMeal',
     authMiddleware,
-    upload.single('image'),
-    addMealByImage
-)
+    upload.single('photo'),
+    saveReviewedMeal
+);
 
-//Get meals of a user
-router.get('/getMeals',
+// Get meals
+router.get(
+    '/getMeals',
     authMiddleware,
     getMeals
-)
+);
 
 // Delete meal
 router.delete(
-    '/:id', 
-    authMiddleware, 
+    '/:id',
+    authMiddleware,
     deleteMeal
-)
+);
 
-
-module.exports = router
+module.exports = router;

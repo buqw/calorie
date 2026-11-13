@@ -1,111 +1,293 @@
-const Meal = require('../models/Meal')
-const { addXP } = require('../utils/gamification')
-const OpenAI = require('openai')
-const sharp = require('sharp')
+const Meal = require('../models/Meal');
+const { addXP } = require('../utils/gamification');
+const OpenAI = require('openai');
+const sharp = require('sharp');
 
 const client = new OpenAI({
     apiKey: process.env.OpenAi_Key
-})
+});
 
-//Adding meals with nutritions
-const addMealWithNutritions = async (req,res) => {
-    try{
-        const {
-            name,
-            mealType,
-            nutrition
-        } = req.body;
+// Parse JSON fields (useful for FormData requests)
+const parseJSONField = (value) => {
+    if (typeof value !== 'string') return value;
 
-        // Validate meal info
-        if(
-            !name ||
+    try {
+        return JSON.parse(value);
+    } catch {
+        return null;
+    }
+};
+
+// Optimize image before saving
+const optimizeImage = async (file) => {
+    const imageBuffer = await sharp(file.buffer)
+        .resize({
+            width: 768,
+            height: 768,
+            fit: 'inside'
+        })
+        .jpeg({ quality: 70 })
+        .toBuffer();
+
+    return `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+};
+
+// ==========================================
+// Save reviewed meal
+// ==========================================
+
+const saveReviewedMeal = async (req, res) => {
+    try {
+        const { name, mealType, method } = req.body;
+
+        const nutrition = parseJSONField(req.body.nutrition);
+        const ingredients = parseJSONField(req.body.ingredients);
+
+        if (
+            typeof name !== 'string' ||
+            !name.trim() ||
             !mealType ||
             !nutrition
-        ){
+        ) {
             return res.status(400).json({
+                success: false,
                 message: 'Name, meal type and nutrition are required.'
-            })
+            });
         }
-        //Adding meal
-        const meal = await Meal.create({
+
+        if (!['nutrition', 'ingredients', 'photo'].includes(method)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid meal method.'
+            });
+        }
+
+        // Check ingredients for AI methods
+        if (
+            (method === 'ingredients' || method === 'photo') &&
+            (
+                !Array.isArray(ingredients) ||
+                ingredients.length === 0 ||
+                ingredients.some(item =>
+                    !item ||
+                    typeof item.name !== 'string' ||
+                    !item.name.trim()
+                )
+            )
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid meal ingredients are required.'
+            });
+        }
+
+        // Check image for Photo method
+        if (method === 'photo' && !req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Meal photo is required.'
+            });
+        }
+
+        // Validate nutrition values
+        const nutritionFields = [
+            nutrition.calories,
+            nutrition.protein,
+            nutrition.carbs,
+            nutrition.fat
+        ];
+
+        if (
+            !nutritionFields.every(value =>
+                typeof value === 'number' &&
+                Number.isFinite(value) &&
+                value >= 0
+            )
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid nutrition values.'
+            });
+        }
+
+        // Build meal data
+        const mealData = {
             user: req.user._id,
-            name,
+            name: name.trim(),
             mealType,
             nutrition
-        })
+        };
 
-        //Update XP
+        // Save ingredients only for AI methods
+        if (method === 'ingredients' || method === 'photo') {
+
+            const formattedIngredients = ingredients.map(item => {
+                const amount = Number(
+                    item.amount ?? item.quantity ?? 0
+                );
+
+                return {
+                    name: item.name.trim(),
+                    amount,
+                    unit: typeof item.unit === 'string'
+                        ? item.unit.trim()
+                        : ''
+                };
+            });
+
+            // Validate ingredient amounts
+            const invalidAmount = formattedIngredients.some(item =>
+                !Number.isFinite(item.amount) ||
+                item.amount < 0
+            );
+
+            if (invalidAmount) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ingredient amounts must be valid non-negative numbers.'
+                });
+            }
+
+            mealData.ingredients = formattedIngredients;
+        }
+
+        // Save image only for Photo method
+        if (method === 'photo') {
+            mealData.image = await optimizeImage(req.file);
+        }
+
+        const meal = await Meal.create(mealData);
+
+        // Add XP
         addXP(req.user._id, 10).catch(err => {
-            console.log('Failed to update xp')
-        })
+            console.log('Failed to update XP:', err.message);
+        });
 
-        res.status(201).json({
-            message: 'Meal added successfully',
+        return res.status(201).json({
+            success: true,
+            message: 'Meal added successfully.',
             meal
-        })
+        });
 
-    }catch(err){
-        res.status(500).json({
-            message: 'Failed to add meal',
+    } catch (err) {
+        console.error(err);
+
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to save meal.',
             error: err.message
-        })
+        });
     }
-}
+};
 
-// Adding meals with ingredients
-const addMealWithIngredients = async (req,res) =>{
-    try{
-        const {text,mealType} = req.body;
+// ==========================================
+// Analyze meal using ingredients
+// ==========================================
 
-        if(!text){
+const analyzeMealWithIngredients = async (req, res) => {
+    try {
+        const { text, ingredients } = req.body;
+
+        let mealDescription = text;
+
+        // Validate ingredients before sending to AI
+        if (ingredients !== undefined) {
+
+            if (!Array.isArray(ingredients) || ingredients.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ingredients must be a non-empty array.'
+                });
+            }
+
+            const invalidIngredient = ingredients.some(item => {
+                if (
+                    !item ||
+                    typeof item.name !== 'string' ||
+                    !item.name.trim()
+                ) {
+                    return true;
+                }
+
+                const amount = item.quantity ?? item.amount;
+
+                if (amount !== undefined && amount !== '') {
+                    const numericAmount = Number(amount);
+
+                    if (
+                        !Number.isFinite(numericAmount) ||
+                        numericAmount < 0
+                    ) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+
+            if (invalidIngredient) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid ingredient data.'
+                });
+            }
+
+            mealDescription = ingredients.map(item =>
+                `${item.name.trim()}, amount: ${item.quantity ?? item.amount ?? ''} ${item.unit ?? ''}`
+            ).join('\n');
+        }
+
+        if (
+            typeof mealDescription !== 'string' ||
+            !mealDescription.trim()
+        ) {
             return res.status(400).json({
                 success: false,
                 message: 'Meal description is required.'
-            })
+            });
         }
 
         const response = await client.responses.create({
             model: 'gpt-5-mini',
-            input:
-            `
+            input: `
                 You are a nutrition assistant for a calorie tracking application.
 
                 Analyze the meal described by the user.
 
                 User meal:
-                ${text}
+                ${mealDescription}
 
                 Estimate the ingredients and nutritional values based on the information provided.
 
                 Return ONLY valid JSON using exactly this structure:
 
                 {
-                "name": "string",
-                "ingredients": [
-                    {
                     "name": "string",
-                    "amount": number,
-                    "unit": "string"
+                    "ingredients": [
+                        {
+                            "name": "string",
+                            "amount": number,
+                            "unit": "string"
+                        }
+                    ],
+                    "nutrition": {
+                        "calories": number,
+                        "protein": number,
+                        "carbs": number,
+                        "fat": number,
+                        "vitamins": {
+                            "vitaminA": number,
+                            "vitaminC": number,
+                            "vitaminD": number,
+                            "vitaminB12": number
+                        },
+                        "minerals": {
+                            "calcium": number,
+                            "iron": number,
+                            "magnesium": number,
+                            "potassium": number
+                        }
                     }
-                ],
-                "nutrition": {
-                    "calories": number,
-                    "protein": number,
-                    "carbs": number,
-                    "fat": number,
-                    "vitamins": {
-                    "vitaminA": number,
-                    "vitaminC": number,
-                    "vitaminD": number,
-                    "vitaminB12": number
-                    },
-                    "minerals": {
-                    "calcium": number,
-                    "iron": number,
-                    "magnesium": number,
-                    "potassium": number
-                    }
-                }
                 }
 
                 Rules:
@@ -118,41 +300,34 @@ const addMealWithIngredients = async (req,res) =>{
                 - Do not use markdown.
                 - Return JSON only.
             `
-        })
+        });
 
         const aiResult = JSON.parse(response.output_text);
-        const meal = await Meal.create({
-            user: req.user._id,
+
+        return res.status(200).json({
+            success: true,
             name: aiResult.name,
-            mealType: mealType || 'other',
             ingredients: aiResult.ingredients,
             nutrition: aiResult.nutrition
-        })
+        });
 
-        //Update XP
-        addXP(req.user._id, 10).catch(err => {
-            console.log('Failed to update xp')
-        })
+    } catch (err) {
+        console.error(err);
 
-        res.status(201).json({
-            success: true,
-            meal 
-        })
-
-    }catch(err){
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: 'Failed to add meal.',
+            message: 'Failed to analyze meal.',
             error: err.message
-        })
+        });
     }
-}
+};
 
-// Adding meals from image using AI
-const addMealByImage = async (req, res) => {
+// ==========================================
+// Analyze meal using image
+// ==========================================
+
+const analyzeMealByImage = async (req, res) => {
     try {
-        const { mealType } = req.body;
-
         if (!req.file) {
             return res.status(400).json({
                 success: false,
@@ -167,9 +342,7 @@ const addMealByImage = async (req, res) => {
                 height: 768,
                 fit: 'inside'
             })
-            .jpeg({
-                quality: 70
-            })
+            .jpeg({ quality: 70 })
             .toBuffer();
 
         const base64Image = imageBuffer.toString('base64');
@@ -186,37 +359,36 @@ const addMealByImage = async (req, res) => {
                     content: [
                         {
                             type: 'input_text',
-                            text: 
-                            `
+                            text: `
                                 Analyze this meal image and return only JSON.
-                                
+
                                 {
-                                "name": "string",
-                                "ingredients": [
-                                    {
                                     "name": "string",
-                                    "amount": number,
-                                    "unit": "string"
+                                    "ingredients": [
+                                        {
+                                            "name": "string",
+                                            "amount": number,
+                                            "unit": "string"
+                                        }
+                                    ],
+                                    "nutrition": {
+                                        "calories": number,
+                                        "protein": number,
+                                        "carbs": number,
+                                        "fat": number,
+                                        "vitamins": {
+                                            "vitaminA": number,
+                                            "vitaminC": number,
+                                            "vitaminD": number,
+                                            "vitaminB12": number
+                                        },
+                                        "minerals": {
+                                            "calcium": number,
+                                            "iron": number,
+                                            "magnesium": number,
+                                            "potassium": number
+                                        }
                                     }
-                                ],
-                                "nutrition": {
-                                    "calories": number,
-                                    "protein": number,
-                                    "carbs": number,
-                                    "fat": number,
-                                    "vitamins": {
-                                    "vitaminA": number,
-                                    "vitaminC": number,
-                                    "vitaminD": number,
-                                    "vitaminB12": number
-                                    },
-                                    "minerals": {
-                                    "calcium": number,
-                                    "iron": number,
-                                    "magnesium": number,
-                                    "potassium": number
-                                    }
-                                }
                                 }
 
                                 Ingredient rules:
@@ -225,8 +397,8 @@ const addMealByImage = async (req, res) => {
                                 - Do NOT list minor ingredients.
                                 - Keep the ingredient list short and simple.
                                 - The nutrition calculation must still include all ingredients used in the meal,
-                                including salt, sugar, oil, butter, spices, sauces, and other minor ingredients.
-                                
+                                  including salt, sugar, oil, butter, spices, sauces, and other minor ingredients.
+
                                 Estimate amounts when unknown.
                                 Nutrition values are approximate.
                                 No explanations. JSON only.
@@ -244,85 +416,92 @@ const addMealByImage = async (req, res) => {
 
         const aiResult = JSON.parse(response.output_text);
 
-        const meal = await Meal.create({
-            user: req.user._id,
+        return res.status(200).json({
+            success: true,
             name: aiResult.name,
-            mealType: mealType || 'other',
             ingredients: aiResult.ingredients,
             nutrition: aiResult.nutrition
-        });
-
-        //Update XP
-        addXP(req.user._id, 10).catch(err => {
-            console.log('Failed to update xp')
-        })
-
-        res.status(201).json({
-            success: true,
-            meal
         });
 
     } catch (err) {
         console.error(err);
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            message: 'Failed to analyze meal image.'
+            message: 'Failed to analyze meal image.',
+            error: err.message
         });
     }
 };
 
+// ==========================================
+// Get all meals for logged-in user
+// ==========================================
 
-//Send all meals for one user
 const getMeals = async (req, res) => {
-    try{
+    try {
         const meals = await Meal.find({
             user: req.user._id
-        }).sort({date: -1})
+        }).sort({ date: -1 });
 
-        res.status(200).json({
+        return res.status(200).json({
             meals
-        })
-    }catch(err){
-        res.status(500).json({
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        return res.status(500).json({
             message: 'Cannot get meals.',
             error: err.message
-        })
+        });
     }
-}
-// Delete meal by meal id
+};
+
+// ==========================================
+// Delete meal by ID
+// ==========================================
+
 const deleteMeal = async (req, res) => {
-    try{
+    try {
         const meal = await Meal.findOneAndDelete({
             _id: req.params.id,
             user: req.user._id
-        })
+        });
 
-        if(!meal){
+        if (!meal) {
             return res.status(404).json({
                 message: 'Meal not found.'
-            })
+            });
         }
 
-        //Update XP
+        // Remove XP
         addXP(req.user._id, -10).catch(err => {
-            console.log('Failed to update xp')
-        })
+            console.log('Failed to update XP:', err.message);
+        });
 
-        res.status(200).json({
+        return res.status(200).json({
             message: 'Meal deleted successfully.'
-        })
-    }catch(err){
-        res.status(500).json({
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        return res.status(500).json({
             message: 'Failed to delete meal.',
             error: err.message
-        })
+        });
     }
-}
+};
+
+// ==========================================
+// Exports
+// ==========================================
+
 module.exports = {
-    addMealWithNutritions,
-    addMealWithIngredients,
-    addMealByImage,
+    saveReviewedMeal,
+    analyzeMealWithIngredients,
+    analyzeMealByImage,
     getMeals,
     deleteMeal
-}
+};
