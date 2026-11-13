@@ -32,7 +32,9 @@ app.use('/api/history', historyRoutes);
 //Friend routes
 const friendsRoutes = require('./routes/friendsRoutes');
 app.use('/api/friends', friendsRoutes);
-
+// Chatbot routes
+const chatbotRoutes = require('./routes/chatbotRoutes');
+app.use('/api/chatbot', chatbotRoutes);
 
 // MongoDB Connection
 mongoose.connect(process.env.Mongo_URI)
