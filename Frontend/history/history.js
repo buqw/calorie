@@ -1,8 +1,8 @@
 "use strict";
 // Connect your backend here. The response contract is in HISTORY-README.txt.
 const HISTORY_API = {
-  historyUrl: "", // GET returns { success: true, meals: [...] }
-  logoutUrl: "", // POST; use the same logout endpoint as your other pages.
+  historyUrl: "http://127.0.0.1:3000/api/meals/getMeals", // GET returns { success: true, meals: [...] }
+  logoutUrl: "http://127.0.0.1:3000/api/auth/logout", // POST; use the same logout endpoint as your other pages.
   credentials: "include",
   getHeaders: function () { return {}; }, // Supply your existing auth headers.
 };
@@ -48,7 +48,7 @@ function normalizeResponse(response) {
   if (!response || !Array.isArray(response.meals)) throw new Error("The history API must return a meals array.");
   return response.meals.map((meal) => {
     if (!meal || typeof meal !== "object") throw new Error("A meal record is invalid.");
-    const timestamp = meal.createdAt || meal.loggedAt;
+    const timestamp = meal.date || meal.createdAt || meal.loggedAt;
     // Require a timezone in API timestamps to avoid assigning meals to the wrong day.
     if (typeof timestamp !== "string" || !/(Z|[+-]\d{2}:\d{2})$/i.test(timestamp)) throw new Error("Each meal needs a valid createdAt timestamp with a timezone.");
     const date = new Date(timestamp);

@@ -3,13 +3,13 @@
 // ===== 1. Connect your existing backend here =====
 // null endpoints = clearly labeled local preview, without server actions.
 const PROFILE_CONFIG = {
-  getProfileUrl: null,    // Set the actual GET route that returns { user: {...} }.
-  updateProfileUrl: null, // Your screenshot uses PUT /api/profile.
-  changePasswordUrl: null,
+  getProfileUrl: "http://127.0.0.1:3000/api/profile",    // Set the actual GET route that returns { user: {...} }.
+  updateProfileUrl: "http://127.0.0.1:3000/api/profile", // Your screenshot uses PUT /api/profile.
+  changePasswordUrl: "http://127.0.0.1:3000/api/auth/changePassword",
   changePasswordMethod: "POST",
-  deleteAccountUrl: null,
+  deleteAccountUrl: "http://127.0.0.1:3000/api/auth/deleteAccount",
   deleteAccountMethod: "DELETE",
-  logoutUrl: null,
+  logoutUrl: "http://127.0.0.1:3000/api/auth/logout",
   loginPage: "../login/login.html",
   getAuthHeaders: () => ({}), // Add Authorization here if your API uses a bearer token.
   routes: {
@@ -403,17 +403,38 @@ async function changePassword(event) {
 }
 async function deleteAccount(event) {
   event.preventDefault();
+
   if (dialogBusy || $("delete-confirm").value !== "DELETE") return;
+
   const feedback = $("delete-message");
-  if (!PROFILE_CONFIG.deleteAccountUrl) { feedback.textContent = "Connect the delete-account API. No account has been deleted."; return; }
+
+  if (!PROFILE_CONFIG.deleteAccountUrl) {
+    feedback.textContent = "Connect the delete-account API.";
+    return;
+  }
+
   setDialogBusy("delete-dialog", true);
+
   try {
-    await request(PROFILE_CONFIG.deleteAccountUrl, PROFILE_CONFIG.deleteAccountMethod);
-    currentUser = null; draft = null;
+    await request(
+      PROFILE_CONFIG.deleteAccountUrl,
+      PROFILE_CONFIG.deleteAccountMethod,
+      { confirmation: "DELETE" }
+    );
+
+    currentUser = null;
+    draft = null;
+
     window.location.assign(PROFILE_CONFIG.loginPage);
-  } catch (error) { feedback.textContent = requestMessage(error); }
-  finally { setDialogBusy("delete-dialog", false); }
+
+  } catch (error) {
+    feedback.textContent = requestMessage(error);
+
+  } finally {
+    setDialogBusy("delete-dialog", false);
+  }
 }
+
 async function logout() {
   if (busy || dialogBusy) return;
   if (editing) { notice("Save or cancel your profile changes before logging out.", true); return; }

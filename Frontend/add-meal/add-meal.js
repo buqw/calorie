@@ -2,10 +2,10 @@
 // ===== 1. Connect your actual backend endpoints here. =====
 // These POST contracts are documented in ADD-MEAL-README.txt; adapt if yours differ.
 const MEAL_API = {
-  saveUrl: "",
-  analyzeIngredientsUrl: "",
-  analyzePhotoUrl: "",
-  logoutUrl: "",
+  saveUrl: "http://127.0.0.1:3000/api/meals/saveReviewedMeal",
+  analyzeIngredientsUrl: "http://127.0.0.1:3000/api/meals/analyzeIngredients",
+  analyzePhotoUrl: "http://127.0.0.1:3000/api/meals/analyzeImage",
+  logoutUrl: "http://127.0.0.1:3000/api/auth/logout",
   credentials: "include",
   getHeaders: function () { return {}; }, // Use the same auth headers as Dashboard.
 };
@@ -24,6 +24,7 @@ let rowNumber = 0;
 const macroKeys = ["protein", "carbs", "fat"];
 const nutritionKeys = ["calories", ...macroKeys];
 let analysisNutrition = null;
+let analysisIngredients = [];
 
 // ===== 2. Messages, method buttons and numeric validation =====
 function clearMessages() { field("meal-error").hidden = true; field("meal-message").hidden = true; }
@@ -87,24 +88,52 @@ function updateModeUI() {
   });
   macroKeys.forEach(function (key) { field(key).disabled = busy || saved || field("nutrition-panel").hidden; });
 }
+function setBusy(value) {
+  busy = value;
+
+  field("analyze-meal").disabled = value || saved;
+  field("save-meal").disabled = value || saved;
+  field("add-ingredient").disabled = value || saved;
+  field("meal-photo").disabled = value || saved;
+  field("remove-photo").disabled = value || saved;
+  field("logout").disabled = value || saved;
+
+  document.querySelectorAll("[data-method]").forEach(function (button) {
+    button.disabled = value || saved;
+  });
+
+  document.querySelectorAll(
+    ".ingredient-row input, .ingredient-row select, .remove-ingredient"
+  ).forEach(function (element) {
+    element.disabled = value || saved;
+  });
+
+  updateModeUI();
+}
 function switchMethod(value) {
   if (busy || saved || !["nutrition", "ingredients", "photo"].includes(value) || value === method) return;
   method = value; analysisReady = false; clearMessages();
   macroKeys.forEach(function (key) { field(key).value = ""; });
-  analysisNutrition = null; updateCalculatedCalories();
+  analysisNutrition = null;
+  analysisIngredients = [];
+  updateCalculatedCalories();
   updateModeUI();
 }
 function invalidateAnalysis() {
   if (busy || method === "nutrition") return;
-  const previous = analysisReady; analysisReady = false; analysisNutrition = null; updateModeUI(); updateCalculatedCalories();
-  if (previous) mealMessage("Your inputs changed. Analyze again before adding this meal.");
-}
-function setBusy(value) {
-  busy = value; field("meal-form").setAttribute("aria-busy", String(value));
-  document.querySelectorAll("button, #meal-form input, #meal-form select, #meal-form textarea").forEach(function (control) { control.disabled = value || saved; });
-  // Avoid navigation while a save/analysis request is pending.
-  ["back-dashboard", "cancel-meal"].forEach(function (id) { field(id).setAttribute("aria-disabled", String(value)); });
+
+  const previous = analysisReady;
+
+  analysisReady = false;
+  analysisNutrition = null;
+  analysisIngredients = [];
+
   updateModeUI();
+  updateCalculatedCalories();
+
+  if (previous) {
+    mealMessage("Your inputs changed. Analyze again before adding this meal.");
+  }
 }
 
 // ===== 3. Ingredients: names + constrained quantities + units =====
@@ -163,26 +192,60 @@ function requirePhoto() { if (!photoFile) throw new Error("Choose a meal photo f
 
 // ===== 5. API contracts: change these adapters to match your backend =====
 function mapAnalysisResponse(response) {
-  const nutrition = response.nutrition || (response.data && response.data.nutrition);
-  if (!nutrition || typeof nutrition !== "object") throw new Error("Analysis must return {nutrition:{calories,protein,carbs,fat}}.");
+  const data = response.data || response;
+
+  const nutrition = data.nutrition;
+
+  if (!nutrition || typeof nutrition !== "object") {
+    throw new Error("Analysis did not return nutrition data.");
+  }
+
   const result = {};
+
   nutritionKeys.forEach(function (key) {
     const value = nutrition[key];
-    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) throw new Error("Analysis returned an invalid " + key + " value.");
+
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+      throw new Error("Analysis returned an invalid " + key + " value.");
+    }
+
     result[key] = value;
-  }); return result;
+  });
+
+  const ingredients = data.ingredients;
+
+  if (!Array.isArray(ingredients) || ingredients.length === 0) {
+    throw new Error("Analysis did not return any ingredients.");
+  }
+
+  return {
+    nutrition: result,
+    ingredients: ingredients
+  };
 }
+
 function buildSavePayload(metadata, nutrition, ingredients) {
   const payload = { ...metadata, method: method, nutrition: nutrition };
   if (method === "ingredients") payload.ingredients = ingredients;
   // No date/time from browser: backend assigns the authoritative timestamp on create.
   return payload;
 }
-function photoFormData(metadata, nutrition) {
-  const form = new FormData(); form.append("photo", requirePhoto());
-  form.append("name", metadata.name); form.append("mealType", metadata.mealType);
+function photoFormData(metadata, nutrition, ingredients) {
+  const form = new FormData();
+
+  form.append("photo", requirePhoto());
+  form.append("name", metadata.name);
+  form.append("mealType", metadata.mealType);
   form.append("method", "photo");
-  if (nutrition) form.append("nutrition", JSON.stringify(nutrition));
+
+  if (nutrition) {
+    form.append("nutrition", JSON.stringify(nutrition));
+  }
+
+  if (ingredients) {
+    form.append("ingredients", JSON.stringify(ingredients));
+  }
+
   return form;
 }
 async function mealRequest(url, body, requestMethod = "POST") {
@@ -195,7 +258,14 @@ async function mealRequest(url, body, requestMethod = "POST") {
     const response = await fetch(url, { method: requestMethod, credentials: MEAL_API.credentials,
       headers: headers, signal: controller.signal, ...(body !== undefined ? { body: isForm ? body : JSON.stringify(body) } : {}) });
     let data = null; try { data = await response.json(); } catch (_) { /* May be an empty successful save response. */ }
-    if (!response.ok) { const error = new Error("Meal request failed"); error.status = response.status; throw error; }
+    if (!response.ok) {
+      const error = new Error(
+        data?.message || data?.error || "Meal request failed"
+      );
+
+      error.status = response.status;
+      throw error;
+    }
     if (data && data.success === false) throw new Error("The API reported that this request did not succeed.");
     if (!data && response.status !== 204) throw new Error("The API must return JSON or HTTP 204. Check that the URL points to your backend, not Live Server.");
     return data || {};
@@ -225,8 +295,14 @@ async function analyzeMeal() {
   setBusy(true); mealMessage("Analyzing your meal…");
   try {
     const result = mapAnalysisResponse(await mealRequest(url, body));
-    analysisNutrition = result;
-    macroKeys.forEach(function (key) { field(key).value = String(result[key]); });
+
+    analysisNutrition = result.nutrition;
+    analysisIngredients = result.ingredients;
+
+    macroKeys.forEach(function (key) {
+      field(key).value = String(result.nutrition[key]);
+    });
+
     updateCalculatedCalories();
     analysisReady = true; mealMessage("Review the estimated nutrition, then click Add Meal to save.");
   } catch (error) { analysisReady = false; field("meal-message").hidden = true; mealError(mealRequestError(error)); }
@@ -238,15 +314,26 @@ async function saveMeal(event) {
     const metadata = collectMetadata();
     if (method !== "nutrition" && !analysisReady) throw new Error("Analyze and review your meal before adding it.");
     const nutrition = collectNutrition();
-    body = method === "photo" ? photoFormData(metadata, nutrition)
-      : buildSavePayload(metadata, nutrition, method === "ingredients" ? collectIngredients() : undefined);
+    if (method === "photo") {
+      body = photoFormData(metadata, nutrition, analysisIngredients);
+    } else {
+      body = buildSavePayload(
+        metadata,
+        nutrition,
+        method === "ingredients" ? analysisIngredients : undefined
+      );
+    }
     if (!MEAL_API.saveUrl.trim()) throw new Error("Set MEAL_API.saveUrl to your meal-creation API URL in add-meal.js. No meal has been saved.");
   } catch (error) { mealError(error.message); return; }
   setBusy(true); mealMessage("Saving your meal…");
   try {
-    await mealRequest(MEAL_API.saveUrl, body); saved = true;
+    await mealRequest(MEAL_API.saveUrl, body);
+
+    saved = true;
+    busy = false;
+
     mealMessage("Meal saved successfully. Returning to your dashboard…");
-    // Dashboard reload makes a fresh GET so totals reflect the saved meal.
+
     window.location.assign(MEAL_ROUTES.dashboard);
   } catch (error) { field("meal-message").hidden = true; mealError(mealRequestError(error)); }
   finally { setBusy(false); }

@@ -1,9 +1,9 @@
 "use strict";
 // Switch mode to "api" when your backend is ready. No OpenAI key belongs here.
 const CHAT_CONFIG = {
-  mode: "mock", // "mock" or "api"
-  apiUrl: "/api/chat",
-  logoutUrl: "",
+  mode: "api", // "mock" or "api"
+  apiUrl: "http://127.0.0.1:3000/api/chatbot",
+  logoutUrl: "http://127.0.0.1:3000/api/auth/logout",
   credentials: "include",
   getHeaders: function () { return {}; }, // Existing app authentication headers.
   timeoutMs: 30000,

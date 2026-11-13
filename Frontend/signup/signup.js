@@ -4,9 +4,9 @@
 // null = working frontend preview; no account is created.
 // Connect your Express routes here when the backend is ready.
 const CONFIG = {
-  registerUrl: null, // Example: "/api/auth/register"
+  registerUrl: "http://127.0.0.1:3000/api/auth/register", // Example: "/api/auth/register"
   profileUrl: null,  // Example: "/api/users/me/profile"
-  loginUrl: "login.html",
+  loginUrl: "../login/login.html",
   dashboardUrl: "../dashboard/dashboard.html",
 };
 const PAGES = ["signup.html", "weight.html", "height.html", "birthdate.html",
@@ -125,7 +125,9 @@ function displayApiError(error) {
     showError("Too many attempts. Please wait and try again.");
   } else if (error.status === 401) {
     showError("Your session has expired. Please log in again.");
-  } else if (error.status === 409) {
+  } else if (error.status === 400 && data.message) {
+    showError(data.message);}
+   else if (error.status === 409) {
     showError("This email or username is already registered. Please check both fields.");
   } else if (error.name === "AbortError") {
     showError("The request timed out. Please try again.");
@@ -209,30 +211,34 @@ function initializeSignup() {
     note.hidden = false;
     note.textContent = draft.account.mode === "demo"
       ? "Your details are ready for this preview. No account has been created. Continue to edit your setup."
-      : "Your account has been created. Continue to finish your setup.";
+      : "Your account details are saved. Continue to finish your setup.";
   }
 }
 async function submitSignup() {
   if (draft.account) {
+    if (!draft.account.password) {
+      showError("Please enter your password again.");
+      return;
+    }
+
     if (completeStep()) navigateTo(2);
     return;
   }
+
   const credentials = validateSignup();
   if (!credentials) return;
-  setBusy(true);
-  try {
-    if (!saveDraft()) return; // Verify storage before sending registration.
-    if (CONFIG.registerUrl) await apiRequest(CONFIG.registerUrl, "POST", credentials);
-    draft.account = { username: credentials.username, email: credentials.email,
-      mode: CONFIG.registerUrl ? "live" : "demo" };
-    // Passwords remain only in the current form and request. Never persist them.
-    document.getElementById("password").value = "";
-    document.getElementById("confirmPassword").value = "";
-    if (completeStep()) navigateTo(2);
-  } catch (error) { displayApiError(error); }
-  finally { setBusy(false); }
-}
 
+  draft.account = {
+    username: credentials.username,
+    email: credentials.email,
+    password: credentials.password,
+    mode: "live"
+  };
+
+  if (completeStep()) {
+    navigateTo(2);
+  }
+}
 // ===== 5. Selection-only number wheels and units =====
 function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
 function daysInMonth(year, month) { return new Date(year, month, 0).getDate(); }
@@ -392,13 +398,52 @@ function initializeChoices() {
   });
 }
 function getProfile() {
+  const goalMap = {
+    "lose-fat": "lose_weight",
+    "build-muscle": "gain_weight",
+    "maintain": "maintain_weight"
+  };
+
+  const activityMap = {
+    "sedentary": "sedentary",
+    "light": "light",
+    "moderate": "moderate",
+    "very": "active",
+    "extreme": "very_active"
+  };
+
+  const dietMap = {
+    "no-preference": "no_preference",
+    "vegetarian": "vegetarian",
+    "vegan": "vegan"
+  };
+
   return {
-    weightKg: Number(draft.weightKg.toFixed(4)),
-    heightCm: Number(draft.heightCm.toFixed(4)),
-    dateOfBirth: `${draft.birth.year}-${String(draft.birth.month).padStart(2, "0")}-${String(draft.birth.day).padStart(2, "0")}`,
-    gender: draft.gender, activityLevel: draft.activity, goal: draft.goal,
-    dietaryPreference: draft.diet,
-    preferredUnits: { weight: draft.weightUnit, height: draft.heightUnit },
+    username: draft.account.username,
+    email: draft.account.email,
+    weight: {
+      value: Number(
+        (draft.weightUnit === "kg"
+          ? draft.weightKg
+          : draft.weightKg * LB_PER_KG).toFixed(2)
+      ),
+      unit: draft.weightUnit
+    },
+    height: {
+      value: Number(
+        (draft.heightUnit === "cm"
+          ? draft.heightCm
+          : draft.heightCm / CM_PER_IN).toFixed(2)
+      ),
+      unit: draft.heightUnit
+    },
+    birthDate: new Date(
+      `${draft.birth.year}-${String(draft.birth.month).padStart(2, "0")}-${String(draft.birth.day).padStart(2, "0")}T00:00:00`
+    ).toISOString(),
+    gender: draft.gender,
+    activityLevel: activityMap[draft.activity],
+    goal: goalMap[draft.goal],
+    dietType: dietMap[draft.diet]
   };
 }
 function showCompletion() {
@@ -419,7 +464,7 @@ function showCompletion() {
   summary.replaceChildren();
   const weight = pickerSpec("weight"), height = pickerSpec("height");
   const items = [["Username", draft.account.username], ["Weight", `${formatNumber("weight", weight.value)} ${weight.unit}`],
-    ["Height", `${formatNumber("height", height.value)} ${height.unit}`], ["Date of birth", profile.dateOfBirth],
+    ["Height", `${formatNumber("height", height.value)} ${height.unit}`], ["Date of birth", profile.birthDate.slice(0, 10)],
     ["Gender", names[draft.gender]], ["Activity", names[draft.activity]], ["Goal", names[draft.goal]], ["Diet", names[draft.diet]]];
   items.forEach(([label, value]) => {
     const dt = document.createElement("dt"); dt.textContent = label;
@@ -445,17 +490,35 @@ async function submitStep(event) {
     if (completeStep()) navigateTo(step + 1);
     return;
   }
-  setBusy(true);
-  try {
-    if (draft.account.mode === "live") {
-      if (!CONFIG.profileUrl) { showError("Connect the profile API to save your setup."); return; }
-      await apiRequest(CONFIG.profileUrl, "PUT", getProfile());
-    }
-    if (!completeStep()) return;
-    if (CONFIG.dashboardUrl && draft.account.mode === "live") window.location.assign(CONFIG.dashboardUrl);
-    else showCompletion();
-  } catch (error) { displayApiError(error); }
-  finally { setBusy(false); }
+setBusy(true);
+
+try {
+  const profile = getProfile();
+
+const password = draft.account?.password;
+
+if (!password) {
+  showError("Password is missing. Please return to the signup page.");
+  return;
+}
+
+await apiRequest(CONFIG.registerUrl, "POST", {
+  ...profile,
+  password
+});
+
+  draft.completed.push(8);
+  saveDraft();
+
+  sessionStorage.removeItem(STORAGE_KEY);
+
+  window.location.assign(CONFIG.dashboardUrl);
+
+} catch (error) {
+  displayApiError(error);
+} finally {
+  setBusy(false);
+}
 }
 
 // ===== 7. Initialize this standalone step page =====

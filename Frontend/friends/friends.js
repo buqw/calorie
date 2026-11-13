@@ -2,11 +2,13 @@
 
 // Enter your backend URLs. All displayed data comes from the API.
 const FRIENDS_CONFIG = {
-  friendsUrl: '',         // GET -> { friends: [...] }
-  requestsUrl: '',        // GET -> { requests: [...] }
-  progressUrl: '',        // GET ?friendId=... -> { progress: {...} }
-  actionUrl: '',          // POST { action, friendId } or { action, requestId }
-  logoutUrl: '',          // POST; backend should clear its session cookie
+  friendsUrl: 'http://127.0.0.1:3000/api/friends',         // GET -> { friends: [...] }
+  requestsUrl: 'http://127.0.0.1:3000/api/friends/requests',        // GET -> { requests: [...] }
+  searchUrl: 'http://127.0.0.1:3000/api/friends/search',
+  progressUrl: 'http://127.0.0.1:3000/api/friends/progress',        // GET ?friendId=... -> { progress: {...} }
+  actionUrl: 'http://127.0.0.1:3000/api/friends/action',          // POST { action, friendId } or { action, requestId }
+  sendRequestUrl: 'http://127.0.0.1:3000/api/friends/request',
+  logoutUrl: 'http://127.0.0.1:3000/api/auth/logout',          // POST; backend should clear its session cookie
   credentials: 'include',
   getHeaders: () => ({})  // Optional authentication headers; never embed secret keys.
 };
@@ -25,7 +27,80 @@ let progressController;
 const $ = id => document.getElementById(id);
 const valid = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
 const format = value => valid(value) ? value.toLocaleString('en-US', {maximumFractionDigits:1}) : '—';
+let searchResults = [];
+let searchMode = false;
+let searching = false;
 
+async function searchUsers(username) {
+  if (busy || searching) return;
+
+  username = username.trim().replace(/^@/, '');
+
+  if (!username) {
+    searchMode = false;
+    searchResults = [];
+    render();
+    return;
+  }
+
+  searching = true;
+  searchMode = true;
+  searchResults = [];
+
+  showError();
+  $('status').textContent = 'Searching...';
+  render();
+
+  try {
+    const url = new URL(FRIENDS_CONFIG.searchUrl);
+    url.searchParams.set('username', username);
+
+    const result = await request(url.href);
+
+    if (!Array.isArray(result.users)) {
+      throw new Error('Invalid search response.');
+    }
+
+    searchResults = result.users;
+    $('status').textContent = `${searchResults.length} user(s) found.`;
+
+  } catch (error) {
+    showError(error.message);
+    $('status').textContent = 'Search failed.';
+  } finally {
+    searching = false;
+    render();
+  }
+}
+
+async function sendRequest(user) {
+  if (busy) return;
+
+  busy = true;
+  render();
+  showError();
+
+  try {
+    await request(FRIENDS_CONFIG.sendRequestUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: user.id
+      })
+    });
+
+    searchResults = searchResults.filter(
+      item => item.id !== user.id
+    );
+
+    $('status').textContent = 'Friend request sent successfully.';
+
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    busy = false;
+    render();
+  }
+}
 // Round FIRST, then choose a color using the displayed percentage.
 // Over 100% stays green, while the bar/ring fill is capped at 100%.
 function getProgress(consumed, target) {
@@ -77,6 +152,31 @@ function render() {
   }
   const list=$('friends-list'); list.replaceChildren();
   list.setAttribute('aria-labelledby',activeTab+'-tab');
+  // Display search results instead of the current tab
+  if (searchMode) {
+    list.setAttribute('aria-labelledby', 'friends-tab');
+
+    if (!searchResults.length) {
+      list.append(element('p', 'empty', 'No users found.'));
+      return;
+    }
+
+    for (const user of searchResults) {
+      const row = element('div', 'request-row');
+      row.append(person(user));
+
+      const actions = element('div', 'request-actions');
+
+      actions.append(
+        button('Add Friend', 'primary', () => sendRequest(user))
+      );
+
+      row.append(actions);
+      list.append(row);
+    }
+
+    return;
+  }
   const query=$('search').value.trim().toLowerCase().replace(/^@/,'');
   const items=(activeTab==='friends'?friends:requests).filter(f=>String(f.username || '').toLowerCase().includes(query));
   items.sort((a,b)=>$('sort').value==='streak'?(b.streak||0)-(a.streak||0):$('sort').value==='progress'?(getProgress(b.calories?.consumed,b.calories?.target).percent ?? -1)-(getProgress(a.calories?.consumed,a.calories?.target).percent ?? -1):String(a.name||a.username).localeCompare(String(b.name||b.username)));
@@ -99,25 +199,58 @@ function render() {
     const menu=element('details','friend-menu');const summary=element('summary','','⋮');summary.setAttribute('aria-label',`Options for ${friend.username}`);menu.append(summary,button('Remove Friend','',()=>performAction('remove',friend)));row.append(menu);list.append(row);
   }
 }
-async function request(url, options={}) {
-  if(!url) throw new Error('Configure the required backend URL in friends.js.');
-  const controller=new AbortController();
-  const external=options.signal;
-  const abort=()=>controller.abort();
-  external?.addEventListener('abort',abort,{once:true});
-  if(external?.aborted) controller.abort();
-  const timer=setTimeout(abort,30000);
+
+async function request(url, options = {}) {
+  if (!url) {
+    throw new Error('Backend URL is not configured.');
+  }
+
+  const controller = new AbortController();
+  const external = options.signal;
+
+  const abort = () => controller.abort();
+
+  external?.addEventListener('abort', abort, { once: true });
+
+  if (external?.aborted) controller.abort();
+
+  const timer = setTimeout(abort, 30000);
+
   try {
-    const headers=new Headers(FRIENDS_CONFIG.getHeaders());
-    if(options.body) headers.set('Content-Type','application/json');
-    const response=await fetch(url,{...options,headers,credentials:FRIENDS_CONFIG.credentials,signal:controller.signal});
-    if(!response.ok) throw new Error(response.status===401?'Please log in again.':`Request failed (${response.status}). Please try again.`);
-    if(response.status===204) return {};
-    const data=await response.json();
-    if(data.success===false) throw new Error(typeof data.message==='string'?data.message:'The request could not be completed.');
+    const headers = new Headers(FRIENDS_CONFIG.getHeaders());
+
+    if (options.body) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: FRIENDS_CONFIG.credentials,
+      signal: controller.signal
+    });
+
+    const data = response.status === 204
+      ? {}
+      : await response.json();
+
+    if (!response.ok || data.success === false) {
+      throw new Error(
+        data.message ||
+        (response.status === 401
+          ? 'Please log in again.'
+          : `Request failed (${response.status}).`)
+      );
+    }
+
     return data;
-  } finally {clearTimeout(timer);external?.removeEventListener('abort',abort);}
+
+  } finally {
+    clearTimeout(timer);
+    external?.removeEventListener('abort', abort);
+  }
 }
+
 function validateList(data,key) {
   if(!Array.isArray(data[key]) || data[key].some(item=>!item || typeof item!=='object' || typeof item.username!=='string' || !['string','number'].includes(typeof item.id))) throw new Error(`Invalid ${key} response. Check the API format in README.`);
   return data[key];
@@ -174,12 +307,51 @@ async function openProgress(friend) {
     if($('progress-dialog').open) renderProgress(friend,data);
   } catch(error) {if($('progress-dialog').open) $('progress-content').replaceChildren(element('p','notice',error.name==='AbortError'?'Request cancelled or timed out.':error.message));}
 }
-for(const tab of ['friends','requests']) {
-  $(tab+'-tab').addEventListener('click',()=>{activeTab=tab;render();});
-  $(tab+'-tab').addEventListener('keydown',event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();activeTab=event.key==='Home'?'friends':event.key==='End'?'requests':activeTab==='friends'?'requests':'friends';render();$(activeTab+'-tab').focus();}});
+for (const tab of ['friends', 'requests']) {
+  $(tab + '-tab').addEventListener('click', () => {
+    searchMode = false;
+    searchResults = [];
+    $('search').value = '';
+    activeTab = tab;
+    render();
+  });
+
+  $(tab + '-tab').addEventListener('keydown', event => {
+    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+      event.preventDefault();
+
+      searchMode = false;
+      searchResults = [];
+      $('search').value = '';
+
+      activeTab = event.key === 'Home'
+        ? 'friends'
+        : event.key === 'End'
+          ? 'requests'
+          : activeTab === 'friends'
+            ? 'requests'
+            : 'friends';
+
+      render();
+      $(activeTab + '-tab').focus();
+    }
+  });
 }
-$('search-form').addEventListener('submit',event=>{event.preventDefault();render();});
-$('search').addEventListener('input',render);$('sort').addEventListener('change',render);$('refresh').addEventListener('click',load);
+$('search-form').addEventListener('submit', event => {
+  event.preventDefault();
+  searchUsers($('search').value);
+});
+
+$('search').addEventListener('input', () => {
+  if (!$('search').value.trim()) {
+    searchMode = false;
+    searchResults = [];
+    showError();
+    $('status').textContent = '';
+    render();
+  }
+});
+$('sort').addEventListener('change',render);$('refresh').addEventListener('click',load);
 $('close-dialog').addEventListener('click',()=>$('progress-dialog').close());
 $('progress-dialog').addEventListener('close',()=>progressController?.abort());
 document.querySelectorAll('[data-route]').forEach(link=>{if(FRIENDS_ROUTES[link.dataset.route]) link.href=FRIENDS_ROUTES[link.dataset.route];});

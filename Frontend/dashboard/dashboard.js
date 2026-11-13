@@ -18,9 +18,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 "use strict";
 // ===== 1. Put your API URLs here. No mock nutrition data is used. =====
 const API_CONFIG = {
-  dashboardUrl: "", // e.g. "http://localhost:3000/api/dashboard"
-  userUrl: "",      // Optional: profile/gamification endpoint if not in dashboard response.
-  logoutUrl: "",    // Optional POST endpoint for ending the real session.
+  dashboardUrl: "http://127.0.0.1:3000/api/dashboard", // e.g. "http://localhost:3000/api/dashboard"
+  userUrl: "http://127.0.0.1:3000/api/profile",      // Optional: profile/gamification endpoint if not in dashboard response.
+  logoutUrl: "http://127.0.0.1:3000/api/auth/logout",    // Optional POST endpoint for ending the real session.
   credentials: "include", // Cookie authentication.
   getHeaders: function () { return {}; }, // Bearer auth? Return { Authorization: "Bearer " + yourExistingToken }.
 };
@@ -32,11 +32,17 @@ const PAGE_ROUTES = {
 // If your account API uses different field names, change this one function.
 // Supported example: {user:{username,streak,level,xp,xpTarget}}.
 // Or: {user:{username,gamification:{streak,level,xp,xpTarget}}}.
-function mapUserData(response) {
+function mapUserData(response, fallback = {}) {
   const user = response.user || response.profile || response;
-  const game = user.gamification || response.gamification || user;
-  return { username: user.username, streak: game.streak, level: game.level,
-    xp: game.xp, xpTarget: game.xpTarget };
+  const game = response.gamification || user.gamification || user;
+
+  return {
+    username: user.username ?? fallback.username,
+    streak: game.streak ?? fallback.streak,
+    level: game.level ?? fallback.level,
+    xp: game.xp ?? fallback.xp,
+    xpTarget: game.xpToNextLevel ?? fallback.xpTarget
+  };
 }
 
 // ===== 2. Small data helpers =====
@@ -242,8 +248,18 @@ async function loadDashboard() {
     if (!days.length) byId("load-status").textContent = "No nutrition data returned. Log a meal to get started.";
     // Optional account request: failure must not erase successfully loaded nutrition data.
     if (API_CONFIG.userUrl.trim()) {
-      try { renderUser(mapUserData(await apiRequest(API_CONFIG.userUrl))); }
-      catch (error) { showError("Nutrition loaded, but account information could not be loaded. " + errorText(error)); }
+      try {
+        const userResponse = await apiRequest(API_CONFIG.userUrl);
+
+        renderUser(
+          mapUserData(userResponse, mapUserData(response))
+        );
+      } catch (error) {
+        showError(
+          "Nutrition loaded, but account information could not be loaded. " +
+          errorText(error)
+        );
+      }
     }
   } catch (error) {
     showError(errorText(error));

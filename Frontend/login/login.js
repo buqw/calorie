@@ -4,9 +4,9 @@
 // Preview mode is intentional: credentials are not accepted as a real login.
 // Configure real endpoints when your Express backend is ready.
 const LOGIN_CONFIG = {
-  loginUrl: null,          // Example: "/api/auth/login"
-  forgotPasswordUrl: null, // Example: "/api/auth/forgot-password"
-  dashboardUrl: null,      // Example: "dashboard.html"
+  loginUrl: "http://127.0.0.1:3000/api/auth/login",          // Example: "/api/auth/login"
+  forgotPasswordUrl: "http://127.0.0.1:3000/api/auth/forgotPassword", // Example: "/api/auth/forgot-password"
+  dashboardUrl: "../dashboard/dashboard.html",      // Example: "dashboard.html"
 };
 const loginForm = document.querySelector("#login-form");
 const resetForm = document.querySelector("#reset-form");
@@ -93,20 +93,31 @@ function showResetView(show) {
 async function authRequest(url, payload) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
+
   try {
     const response = await fetch(url, {
       method: "POST",
-      credentials: "include", // Secure HttpOnly session cookie set by your backend.
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(payload),
-      signal: controller.signal,
+      signal: controller.signal
     });
+
+    const data = await response.json().catch(() => ({}));
+
     if (!response.ok) {
-      const error = new Error("Authentication request failed");
+      const error = new Error(data.message || "Request failed");
       error.status = response.status;
       throw error;
     }
-  } finally { clearTimeout(timeout); }
+
+    return data;
+
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 function requestError(error, mode) {
   const id = `${mode}-error`;
