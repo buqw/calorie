@@ -125,6 +125,19 @@ const login = async (req,res) =>{
     }
 }
 
+const logout = (req, res) => {
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax'
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Logged out successfully.'
+    });
+};
+
 const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -316,6 +329,7 @@ const resetPassword = async (req, res) => {
 module.exports = {
     register,
     login,
+    logout,
     forgotPassword,
     verifyResetCode,
     resetPassword
